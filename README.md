@@ -7,7 +7,7 @@ There are 2 main use cases for FluentSimulator.
 - Mocking out REST or other APIs during automated browser based testing using something like selenium - useful for light weight single page application testing.
 
 # Usage
-Using the simulator is designed to be extremely simple.
+Using the simulator is designed to be extremely easy.
 
 ```c#
     //Initialise the simulator
