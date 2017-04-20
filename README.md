@@ -43,7 +43,7 @@ You can test how your code handles slow server replies.
 ## Indefinitely suspend responses at runtime
 You can check that your webpage correctly displays loading messages or spinners.
 
-```
+```c#
     var route = simulator.Get("/employee/1").Responds("John Smith");
     //Navigate to your page using selenium
     route.Pause();
