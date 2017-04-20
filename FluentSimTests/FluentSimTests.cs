@@ -8,8 +8,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentSim;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NUnit.Framework;
 using RestSharp;
+using RestSharp.Serializers;
 using Should;
 
 namespace FluentSimTests
@@ -53,7 +56,13 @@ namespace FluentSimTests
 
         private static IRestResponse MakePostRequest(string path, string body)
         {
-            var request = new RestRequest(path, Method.POST);
+            var verb = Method.POST;
+            return MakeRequest(path, verb);
+        }
+
+        private static IRestResponse MakeRequest(string path, Method verb)
+        {
+            var request = new RestRequest(path, verb);
             var client = new RestClient(BaseAddress);
             var resp = client.Execute(request);
             return resp;
@@ -152,11 +161,95 @@ namespace FluentSimTests
             }).Start();
         }
 
-        //When throw exception on unexpected route is set it throws exceptions
-        //When an exception occurrs on stop it throws the exception
-        //Codes work
-        //Serialisation works
-        //Headers work
-        //Contexted changes work
+        [Test]
+        public void CanRespondWithCodes()
+        {
+            Sim.Post("/test").Responds().WithCode(300);
+            MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.Ambiguous);
+        }
+
+        [Test]
+        public void CanRespondWithHeaders()
+        {
+            Sim.Post("/test").Responds().WithHeader("ThisHeader", "ThisValue");
+            var resp = MakePostRequest("/test", "");
+            resp.Headers[0].Name.ShouldEqual("ThisHeader");
+            resp.Headers[0].Value.ShouldEqual("ThisValue");
+        }
+
+        [Test]
+        public void CanReturnSerialisedObjects()
+        {
+            Sim.Post("/test")
+                .Responds(new TestObject());
+
+            MakePostRequest("/test", "").Content.ShouldEqual(@"{""TestField"":""ThisValue""}");
+        }
+
+        [Test]
+        public void CanUseCustomSerializer()
+        {
+            Sim.Stop();
+            Sim = new FluentSimulator(BaseAddress, new JsonSerializerSettings
+            {
+                Converters = { new StringEnumConverter() }
+            });
+            Sim.Start();
+
+            Sim.Post("/test")
+                .Responds(new TestEnumClass());
+
+            MakePostRequest("/test", "").Content.ShouldEqual(@"{""TestEnumField"":""V2""}");
+        }
+
+        [Test]
+        public void CanMatchRequestCaseInsensitively()
+        {
+            Sim.Get("/test").Responds("out");
+            MakeGetRequest("/TEST").Content.ShouldEqual("out");
+        }
+
+        [Test]
+        public void CanMakeOtherVerbRequests()
+        {
+            MakeVerbRequest(Sim.Post("/test"), Method.POST);
+            MakeVerbRequest(Sim.Get("/test"), Method.GET);
+            MakeVerbRequest(Sim.Delete("/test"), Method.DELETE);
+            MakeVerbRequest(Sim.Head("/test"), Method.HEAD);
+            MakeVerbRequest(Sim.Merge("/test"), Method.MERGE);
+            MakeVerbRequest(Sim.Options("/test"), Method.OPTIONS);
+            MakeVerbRequest(Sim.Patch("/test"), Method.PATCH);
+            MakeVerbRequest(Sim.Put("/test"), Method.PUT);
+        }
+
+        private void MakeVerbRequest(RouteConfigurer configurer, Method verb)
+        {
+            if (verb == Method.HEAD)
+            {
+                configurer.Responds("");
+                MakeRequest("/test", verb).StatusCode.ShouldEqual(HttpStatusCode.OK);
+                return;
+            }
+
+            configurer.Responds(verb + "output");
+            MakeRequest("/test", verb).Content.ShouldEqual(verb + "output");
+        }
+
+        private class TestObject
+        {
+            public string TestField = "ThisValue";
+        }
+
+        private class TestEnumClass
+        {
+            public TestEnum TestEnumField = TestEnum.V2;
+
+            public enum TestEnum
+            {
+                V1,
+                V2
+            }
+        }
+
     }
 }

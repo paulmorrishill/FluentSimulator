@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
+using Newtonsoft.Json;
 
 namespace FluentSim
 {
@@ -14,10 +13,18 @@ namespace FluentSim
         private List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
         private HttpListener HttpListener;
         private List<Exception> ListenerExceptions = new List<Exception>();
+        private JsonSerializerSettings JsonSerializer;
 
         public FluentSimulator(string address)
         {
             Address = address;
+            JsonSerializer = new JsonSerializerSettings();
+        }
+
+        public FluentSimulator(string address, JsonSerializerSettings serializer)
+        {
+            Address = address;
+            JsonSerializer = serializer;
         }
 
         public void Start()
@@ -56,13 +63,13 @@ namespace FluentSim
             }
 
             matchingRoute.WaitUntilReadyToRespond();
+            matchingRoute.RunContextModifiers(context);
+
             byte[] buffer = System.Text.Encoding.UTF8.GetBytes(matchingRoute.GetBody());
 
-            // Get a response stream and write the response to it.
             response.ContentLength64 = buffer.Length;
             System.IO.Stream output = response.OutputStream;
             output.Write(buffer, 0, buffer.Length);
-            // You must close the output stream.
             output.Close();
             BeginGetContext();
         }
@@ -74,14 +81,19 @@ namespace FluentSim
 
         public RouteConfigurer Post(string path)
         {
-            var routeConfig = new FluentConfigurator(path, HttpVerb.Post);
+            var routeConfig = new FluentConfigurator(path, HttpVerb.Post, JsonSerializer);
             ConfiguredRoutes.Add(routeConfig);
             return routeConfig;
         }
 
         public RouteConfigurer Get(string path)
         {
-            var routeConfig = new FluentConfigurator(path, HttpVerb.Get);
+            return InitialiseRoute(path, HttpVerb.Get);
+        }
+
+        private RouteConfigurer InitialiseRoute(string path, HttpVerb verb)
+        {
+            var routeConfig = new FluentConfigurator(path, verb, JsonSerializer);
             ConfiguredRoutes.Add(routeConfig);
             return routeConfig;
         }
@@ -92,132 +104,35 @@ namespace FluentSim
                 throw new SimulatorException(ListenerExceptions);
             HttpListener.Stop();
         }
-    }
 
-    public enum HttpVerb
-    {
-        Post,
-        Get,
-        Put,
-        Patch,
-        Head,
-        Delete,
-        Connect,
-        Trace
-    }
-
-    public class SimulatorException : ApplicationException
-    {
-        public SimulatorException() : base("An unexpected exception was thrown while processing the request. See the exception data for the exceptions thrown.")
+        public RouteConfigurer Delete(string routePath)
         {
-            
+            return InitialiseRoute(routePath, HttpVerb.Delete);
         }
 
-        public SimulatorException(List<Exception> listenerExceptions)
+        public RouteConfigurer Head(string routePath)
         {
-            Data.Add("Exceptions", listenerExceptions);
-        }
-    }
-
-    public interface RouteConfigurer
-    {
-        RouteConfigurer Responds<T>(T output);
-        RouteConfigurer Responds(string output);
-        RouteConfigurer WithCode(int code);
-        RouteConfigurer WithHeader(string headerName, string headerValue);
-        RouteConfigurer Delay(TimeSpan routeDelay);
-        RouteConfigurer Pause();
-        RouteConfigurer Resume();
-        RouteConfigurer WithBody<T>();
-        RouteConfigurer WithBody(string body);
-    }
-
-    public class FluentConfigurator : RouteConfigurer
-    {
-        private object Output = "";
-        private string Path;
-        private HttpVerb HttpVerb;
-        private ManualResetEventSlim RespondToRequests = new ManualResetEventSlim(true);
-        private TimeSpan RouteDelay;
-
-        public FluentConfigurator(string path, HttpVerb get)
-        {
-            HttpVerb = get;
-            Path = path;
+            return InitialiseRoute(routePath, HttpVerb.Head);
         }
 
-        public HttpMethod Method { get; set; }
-
-        public RouteConfigurer Responds<T>(T output)
+        public RouteConfigurer Merge(string routePath)
         {
-            Output = output;
-            return this;
+            return InitialiseRoute(routePath, HttpVerb.Merge);
         }
 
-        public RouteConfigurer WithCode(int code)
+        public RouteConfigurer Options(string routePath)
         {
-            throw new System.NotImplementedException();
+            return InitialiseRoute(routePath, HttpVerb.Options);
         }
 
-        public RouteConfigurer WithHeader(string headerName, string headerValue)
+        public RouteConfigurer Patch(string routePath)
         {
-            throw new NotImplementedException();
+            return InitialiseRoute(routePath, HttpVerb.Patch);
         }
 
-        public RouteConfigurer Delay(TimeSpan routeDelay)
+        public RouteConfigurer Put(string routePath)
         {
-            RouteDelay = routeDelay;
-            return this;
-        }
-
-        public RouteConfigurer Pause()
-        {
-            RespondToRequests.Reset();
-            return this;
-        }
-
-        public RouteConfigurer Resume()
-        {
-            RespondToRequests.Set();
-            return this;
-        }
-
-        public RouteConfigurer Responds(string output)
-        {
-            Output = output;
-            return this;
-        }
-
-        public RouteConfigurer WithBody<T>()
-        {
-            throw new NotImplementedException();
-        }
-
-        public RouteConfigurer WithBody(string body)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal string GetBody()
-        {
-            return Output.ToString();
-        }
-
-        internal bool DoesRouteMatch(HttpListenerRequest contextRequest)
-        {
-            if (!Path.EndsWith("/")) Path += "/";
-            var requestPath = contextRequest.Url.LocalPath;
-            if (!requestPath.EndsWith("/")) requestPath += "/";
-
-            var pathMatches = requestPath == Path;
-            var verbMatches = HttpVerb.ToString().ToUpper() == contextRequest.HttpMethod;
-            return pathMatches && verbMatches;
-        }
-
-        internal void WaitUntilReadyToRespond()
-        {
-            Thread.Sleep(RouteDelay);
-            RespondToRequests.Wait();
+            return InitialiseRoute(routePath, HttpVerb.Put);
         }
     }
 }
