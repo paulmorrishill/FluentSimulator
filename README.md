@@ -52,9 +52,9 @@ Want to see how your code handles 500 server errors, or 404s?
 You can send cookies.
 
 ```c#
-	simulator.Post("/authenticate")
-			 .Responds()
-			 .WithCookie(new Cookie("Token", "ABCDEF"));
+    simulator.Post("/authenticate")
+             .Responds()
+             .WithCookie(new Cookie("Token", "ABCDEF"));
 ```
 
 ## Slow responses
