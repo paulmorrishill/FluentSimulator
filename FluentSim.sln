@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.25928.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentSim", "FluentSim\FluentSim.csproj", "{0855EC3E-6187-4CD5-97C2-7E3EE928D665}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentSimTests", "..\FluentSimTests\FluentSimTests.csproj", "{D01BCCC1-F3D8-4B65-AA1C-9863A093478C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentSimTests", "FluentSimTests\FluentSimTests.csproj", "{D01BCCC1-F3D8-4B65-AA1C-9863A093478C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
