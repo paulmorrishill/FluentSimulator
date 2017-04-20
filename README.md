@@ -26,7 +26,7 @@ Using the simulator is designed to be extremely easy.
 The simulator provides some useful functions and can be very useful in testing outputs that aren't easy to recreate using real endpoints.
 
 
-## Serialise objects
+## Serialize objects
 You can return objects through the simulator and they will be converted to JSON before being sent.
 
 ```c#
@@ -52,9 +52,9 @@ Want to see how your code handles 500 server errors, or 404s?
 You can send cookies.
 
 ```c#
-	simulator.Post("/authenticate")
-			 .Responds()
-			 .WithCookie(new Cookie("Token", "ABCDEF"));
+    simulator.Post("/authenticate")
+             .Responds()
+             .WithCookie(new Cookie("Token", "ABCDEF"));
 ```
 
 ## Slow responses
