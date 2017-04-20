@@ -11,7 +11,7 @@ Using the simulator is designed to be extremely easy.
 
 ```c#
     //Initialise the simulator
-    var simulator = new FluentSimulator("http://localhost:8080");
+    var simulator = new FluentSimulator("http://localhost:8080/");
     simulator.Start();
     
     //Setup your simulated routes and responses
