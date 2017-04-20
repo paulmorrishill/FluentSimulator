@@ -68,7 +68,7 @@ You can send cookies.
 			 .WithCookie(new Cookie("Token", "ABCDEF"));
 ```
 
-### Configuring the serialiser
+### Configuring the serializer
 Internally the simulator uses the Newtonsoft [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) library you can pass in your own serializer settings.
 
 ```c#
