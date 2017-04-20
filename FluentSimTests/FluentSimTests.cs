@@ -178,6 +178,16 @@ namespace FluentSimTests
         }
 
         [Test]
+        public void CanRespondWithCookies()
+        {
+            Sim.Get("/test").Responds().WithCookie(new Cookie("name", "VALTEST"));
+            var resp = MakeGetRequest("/test");
+            var cookie = resp.Cookies[0];
+            cookie.Name.ShouldEqual("name");
+            cookie.Value.ShouldEqual("VALTEST");
+        }
+
+        [Test]
         public void CanReturnSerialisedObjects()
         {
             Sim.Post("/test")

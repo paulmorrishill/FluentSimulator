@@ -100,5 +100,11 @@ namespace FluentSim
         {
             return this;
         }
+
+        public RouteConfigurer WithCookie(Cookie cookie)
+        {
+            ResponseModifiers.Add(ctx => ctx.Response.SetCookie(cookie));
+            return this;
+        }
     }
 }

@@ -59,6 +59,15 @@ You can check that your webpage correctly displays loading messages or spinners.
     simulator.Put("/employee/1").Responds(new EmployeeModel());
 ```
 
+## Cookies
+You can send cookies.
+
+```c#
+	simulator.Post("/authenticate")
+			 .Responds()
+			 .WithCookie(new Cookie("Token", "ABCDEF"));
+```
+
 ### Configuring the serialiser
 Internally the simulator uses the Newtonsoft [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) library you can pass in your own serializer settings.
 

@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 
 namespace FluentSim
 {
@@ -12,5 +13,6 @@ namespace FluentSim
         RouteConfigurer Delay(TimeSpan routeDelay);
         RouteConfigurer Pause();
         RouteConfigurer Resume();
+        RouteConfigurer WithCookie(Cookie cookie);
     }
 }
