@@ -1,0 +1,161 @@
+# Notes:
+#   - Minimal appveyor.yml file is an empty file. All sections are optional.
+#   - Indent each level of configuration with 2 spaces. Do not use tabs!
+#   - All section names are case-sensitive.
+#   - Section names should be unique on each level.
+
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# version format
+version: 1.0.{build}
+
+# you can use {branch} name in version format too
+# version: 1.0.{build}-{branch}
+
+# branches to build
+branches:
+  # whitelist
+  only:
+    - master
+
+
+# Maximum number of concurrent jobs for the project
+max_jobs: 1
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Build worker image (VM template)
+image: Visual Studio 2015
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - git config --global core.autocrlf input
+
+# clone directory
+clone_folder: c:\projects\myproject
+
+# fetch repository as zip archive
+shallow_clone: true                 # default is "false"
+
+# set clone depth
+clone_depth: 5                      # clone entire repository history if not defined
+
+# this is how to allow failing jobs in the matrix
+matrix:
+  fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
+  allow_failures:
+    - platform: x86
+      configuration: Debug
+    - platform: x64
+      configuration: Release
+
+# exclude configuration from the matrix. Works similarly to 'allow_failures' but build not even being started for excluded combination.
+matrix:
+  exclude:
+    - platform: x86
+      configuration: Debug
+
+# build cache to preserve files/folders between builds
+cache:
+  - packages -> **\packages.config  # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
+  - projectA\libs
+  - node_modules                    # local npm modules
+  - '%LocalAppData%\NuGet\Cache'
+
+
+# enable patching of AssemblyInfo.* files
+assembly_info:
+  patch: true
+  file: AssemblyInfo.*
+  assembly_version: "1.0.{build}"
+  assembly_file_version: "{version}"
+  assembly_informational_version: "{version}"
+
+
+# Automatically register private account and/or project AppVeyor NuGet feeds.
+#nuget:
+#  account_feed: true
+#  project_feed: true
+#  disable_publish_on_pr: true     # disable publishing of .nupkg artifacts to
+                                  # account/project feeds for pull request builds
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+platform: Any CPU
+
+# to add several platforms to build matrix:
+#platform:
+#  - x86
+#  - Any CPU
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
+# to add several configurations to build matrix:
+#configuration:
+#  - Debug
+#  - Release
+
+build:
+  parallel: true                  # enable MSBuild parallel builds
+  project: FluentSim.sln          # path to Visual Studio solution or project
+  publish_nuget: true             # package projects with .nuspec files and push to artifacts
+  publish_nuget_symbols: true     # generate and publish NuGet symbol packages
+
+  # MSBuild verbosity level
+  verbosity: normal
+
+#---------------------------------#
+#       tests configuration       #
+#---------------------------------#
+
+# to run tests again only selected assemblies and/or categories
+test:
+  assemblies:
+    only:
+      - FluentSimTests\bin\Release\FluentSimTests.dll
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+
+
+  # pushing all *.nupkg files in build directory recursively
+  - path: '**\*.nupkg'
+
+
+#---------------------------------#
+#     deployment configuration    #
+#---------------------------------#
+
+# providers: Local, FTP, WebDeploy, AzureCS, AzureBlob, S3, NuGet, Environment
+# provider names are case-sensitive!
+deploy:
+
+    # Deploying to NuGet feed
+  #- provider: NuGet
+  #  server: https://my.nuget.server/feed
+  #  api_key:
+  #    secure: FYWX6NfjZIVw==
+  #  skip_symbols: false
+  #  symbol_server: https://your.symbol.server/feed
+  #  artifact: MyPackage.nupkg
+
+    # Deploy to GitHub Releases
+  #- provider: GitHub
+  #  artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
+  #  draft: false
+  #  prerelease: false
+  #  on:
+  #    branch: master                # release from master branch only
+  #    appveyor_repo_tag: true       # deploy on tag push only
+
