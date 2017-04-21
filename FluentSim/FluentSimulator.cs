@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace FluentSim
@@ -14,6 +17,8 @@ namespace FluentSim
         private HttpListener HttpListener;
         private List<Exception> ListenerExceptions = new List<Exception>();
         private JsonSerializerSettings JsonSerializer;
+        public List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
+        public IReadOnlyList<ReceivedRequest> ReceivedRequests => IncomingRequests.AsReadOnly();
 
         public FluentSimulator(string address)
         {
@@ -26,6 +31,7 @@ namespace FluentSim
             Address = address;
             JsonSerializer = serializer;
         }
+
 
         public void Start()
         {
@@ -52,8 +58,27 @@ namespace FluentSim
         {
             var context = ((HttpListener) ar.AsyncState).EndGetContext(ar);
             var response = context.Response;
+            var request = context.Request;
 
             var matchingRoute = ConfiguredRoutes.FirstOrDefault(route => route.DoesRouteMatch(context.Request));
+            var body = new StreamReader(request.InputStream).ReadToEnd();
+
+            IncomingRequests.Add(new ReceivedRequest(JsonSerializer)
+            {
+                Url = request.Url,
+                HttpMethod = request.HttpMethod,
+                AcceptTypes = request.AcceptTypes,
+                ContentEncoding = request.ContentEncoding,
+                ContentType = request.ContentType,
+                Cookies = request.Cookies,
+                Headers = request.Headers,
+                QueryString = request.QueryString,
+                RawUrl = request.RawUrl,
+                UserAgent = request.UserAgent,
+                UserLanguage = request.UserLanguages,
+                RequestBody = body
+            });
+
             if (matchingRoute == null)
             {
                 response.StatusCode = 501;
@@ -65,10 +90,10 @@ namespace FluentSim
             matchingRoute.WaitUntilReadyToRespond();
             matchingRoute.RunContextModifiers(context);
 
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(matchingRoute.GetBody());
+            byte[] buffer = Encoding.UTF8.GetBytes(matchingRoute.GetBody());
 
             response.ContentLength64 = buffer.Length;
-            System.IO.Stream output = response.OutputStream;
+            var output = response.OutputStream;
             output.Write(buffer, 0, buffer.Length);
             output.Close();
             BeginGetContext();
@@ -133,6 +158,34 @@ namespace FluentSim
         public RouteConfigurer Put(string routePath)
         {
             return InitialiseRoute(routePath, HttpVerb.Put);
+        }
+    }
+
+    public class ReceivedRequest
+    {
+        private JsonSerializerSettings JsonSerializerSettings;
+
+        public ReceivedRequest(JsonSerializerSettings jsonSerializer)
+        {
+            JsonSerializerSettings = jsonSerializer;
+        }
+
+        public Uri Url { get; set; }
+        public string HttpMethod { get; set; }
+        public Encoding ContentEncoding { get; set; }
+        public string[] AcceptTypes { get; set; }
+        public string ContentType { get; set; }
+        public NameValueCollection Headers { get; set; }
+        public CookieCollection Cookies { get; set; }
+        public NameValueCollection QueryString { get; set; }
+        public string RawUrl { get; set; }
+        public string UserAgent { get; set; }
+        public string[] UserLanguage { get; set; }
+        public string RequestBody { get; set; }
+
+        public T GetBodyAs<T>()
+        {
+            return JsonConvert.DeserializeObject<T>(RequestBody, JsonSerializerSettings);
         }
     }
 }

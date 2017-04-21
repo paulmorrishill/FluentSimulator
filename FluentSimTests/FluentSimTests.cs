@@ -14,6 +14,7 @@ using NUnit.Framework;
 using RestSharp;
 using RestSharp.Serializers;
 using Should;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace FluentSimTests
 {
@@ -54,15 +55,16 @@ namespace FluentSimTests
             return resp;
         }
 
-        private static IRestResponse MakePostRequest(string path, string body)
+        private static IRestResponse MakePostRequest(string path, object body)
         {
             var verb = Method.POST;
-            return MakeRequest(path, verb);
+            return MakeRequest(path, verb, body);
         }
 
-        private static IRestResponse MakeRequest(string path, Method verb)
+        private static IRestResponse MakeRequest(string path, Method verb, object body = null)
         {
             var request = new RestRequest(path, verb);
+            if (body != null) request.AddParameter("text/json", body, ParameterType.RequestBody);
             var client = new RestClient(BaseAddress);
             var resp = client.Execute(request);
             return resp;
@@ -245,11 +247,75 @@ namespace FluentSimTests
             MakeRequest("/test", verb).Content.ShouldEqual(verb + "output");
         }
 
-        [Ignore("TODO")]
         [Test]
         public void CanGetPreviousRequests()
         {
-            Assert.Fail();
+            Sim.Post("/post").Responds("OK");
+            MakePostRequest("/post", "BODY");
+
+            var requests = Sim.ReceivedRequests;
+            requests.Count.ShouldEqual(1);
+            var firstRequest = requests[0];
+            firstRequest.AcceptTypes.Length.ShouldEqual(6);
+            firstRequest.Url.AbsoluteUri.ShouldEqual("http://localhost:8019/post");
+            firstRequest.UserAgent.ShouldStartWith("RestSharp");
+        }
+
+        [Test]
+        public void CanGetPreviousRequestBodyAsString()
+        {
+            Sim.Post("/post").Responds("OK");
+            MakePostRequest("/post", "BODY");
+
+            var requests = Sim.ReceivedRequests;
+            var firstRequest = requests[0];
+            firstRequest.RequestBody.ShouldEqual("BODY");
+        }
+
+        [Test]
+        public void CanGetPreviousRequestBodyAsObject()
+        {
+            Sim.Post("/post").Responds("OK");
+            MakePostRequest("/post", @"{""TestField"":""TESTHERE""}");
+
+            var requests = Sim.ReceivedRequests;
+            var firstRequest = requests[0];
+            firstRequest.GetBodyAs<TestObject>().TestField.ShouldEqual("TESTHERE");
+        }
+
+        [Test]
+        public void CanGetPreviousBodyWithCustomSerializer()
+        {
+            Sim.Stop();
+            Sim = new FluentSimulator(BaseAddress, new JsonSerializerSettings
+            {
+                Converters = { new AllFieldsReplacementConverter() }
+            });
+            Sim.Start();
+
+            Sim.Post("/test");
+
+            MakePostRequest("/test", @"{""TestField"":""original""}");
+
+            Sim.ReceivedRequests[0].GetBodyAs<TestObject>().TestField.ShouldEqual("REPLACEMENT");
+        }
+
+        private class AllFieldsReplacementConverter : JsonConverter
+        {
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                
+            }
+
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            {
+                return "REPLACEMENT";
+            }
+
+            public override bool CanConvert(Type objectType)
+            {
+                return objectType == typeof(string);
+            }
         }
 
         private class TestObject
