@@ -245,6 +245,13 @@ namespace FluentSimTests
             MakeRequest("/test", verb).Content.ShouldEqual(verb + "output");
         }
 
+        [Ignore("TODO")]
+        [Test]
+        public void CanGetPreviousRequests()
+        {
+            Assert.Fail();
+        }
+
         private class TestObject
         {
             public string TestField = "ThisValue";
