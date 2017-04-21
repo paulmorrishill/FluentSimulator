@@ -280,7 +280,7 @@ namespace FluentSimTests
 
             var requests = Sim.ReceivedRequests;
             var firstRequest = requests[0];
-            firstRequest.GetBodyAs<TestObject>().TestField.ShouldEqual("TESTHERE");
+            firstRequest.BodyAs<TestObject>().TestField.ShouldEqual("TESTHERE");
         }
 
         [Test]
@@ -297,7 +297,7 @@ namespace FluentSimTests
 
             MakePostRequest("/test", @"{""TestField"":""original""}");
 
-            Sim.ReceivedRequests[0].GetBodyAs<TestObject>().TestField.ShouldEqual("REPLACEMENT");
+            Sim.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldEqual("REPLACEMENT");
         }
 
         private class AllFieldsReplacementConverter : JsonConverter

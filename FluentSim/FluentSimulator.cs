@@ -183,7 +183,7 @@ namespace FluentSim
         public string[] UserLanguage { get; set; }
         public string RequestBody { get; set; }
 
-        public T GetBodyAs<T>()
+        public T BodyAs<T>()
         {
             return JsonConvert.DeserializeObject<T>(RequestBody, JsonSerializerSettings);
         }
