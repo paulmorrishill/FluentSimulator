@@ -1,4 +1,6 @@
 # FluentSimulator
+[![Build status](https://ci.appveyor.com/api/projects/status/wi118asgtpeqg2ed?svg=true)](https://ci.appveyor.com/project/paulmorrishill/fluentsimulator)
+
 FluentSimulator is a .Net HTTP API simulator library that is extremely versitile and unassuming. 
 
 There are 2 main use cases for FluentSimulator.
