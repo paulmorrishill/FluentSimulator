@@ -24,9 +24,8 @@ Using the simulator is designed to be extremely easy.
     //200 Some example content here
 ```
 
-# Features
+# Responding to requests
 The simulator provides some useful functions and can be very useful in testing outputs that aren't easy to recreate using real endpoints.
-
 
 ## Serialize objects
 You can return objects through the simulator and they will be converted to JSON before being sent.
@@ -77,6 +76,48 @@ You can check that your webpage correctly displays loading messages or spinners.
     //Assert page shows "Loading employee details..."
     route.Resume();
     //Assert page shows the employee information
+```
+
+# Asserting on requests
+In addition to configuring the responses to specific URLs you can assert that the request contained all the information you're expecting.
+
+```c#
+    simulator.Post("/post").Responds("OK");
+    //POST http://localhost/post
+    
+    var requests = simulator.ReceivedRequests;
+    var sentAuthHeader = requests[0].Headers["Authorization"]
+    //Assert sentAuthHeader is correct
+    
+    //Received requests is an list of ReceivedRequest which has the following data
+    public class ReceivedRequest
+    {
+        public Uri Url { get; set; }
+        public string HttpMethod { get; set; }
+        public Encoding ContentEncoding { get; set; }
+        public string[] AcceptTypes { get; set; }
+        public string ContentType { get; set; }
+        public NameValueCollection Headers { get; set; }
+        public CookieCollection Cookies { get; set; }
+        public NameValueCollection QueryString { get; set; }
+        public string RawUrl { get; set; }
+        public string UserAgent { get; set; }
+        public string[] UserLanguage { get; set; }
+        public string RequestBody { get; set; }
+    }
+```
+
+## Deserializing requests
+You can also deserialize the request using the ```BodyAs<T>``` method on the ```ReceivedRequest``` object.
+
+```c#
+    simulator.Post("/employee").Responds("OK");
+    //POST http://localhost/post
+    
+    var requests = simulator.ReceivedRequests;
+    var sentEmployee = requests[0].BodyAs<EmployeeModel>();
+    
+    Assert.AreEqual(sentEmployee.FirstName, "John");
 ```
 
 # Contributing
