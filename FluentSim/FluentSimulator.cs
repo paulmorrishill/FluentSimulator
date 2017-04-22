@@ -76,7 +76,8 @@ namespace FluentSim
                 RawUrl = request.RawUrl,
                 UserAgent = request.UserAgent,
                 UserLanguage = request.UserLanguages,
-                RequestBody = body
+                RequestBody = body,
+                TimeOfRequest = DateTime.Now
             });
 
             if (matchingRoute == null)
@@ -164,6 +165,7 @@ namespace FluentSim
     public class ReceivedRequest
     {
         private JsonSerializerSettings JsonSerializerSettings;
+        public DateTime TimeOfRequest;
 
         public ReceivedRequest(JsonSerializerSettings jsonSerializer)
         {

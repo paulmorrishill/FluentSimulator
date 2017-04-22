@@ -262,6 +262,21 @@ namespace FluentSimTests
         }
 
         [Test]
+        public void CanGetTimeOfPreviousRequest()
+        {
+            Sim.Post("/post").Responds("OK");
+            MakePostRequest("/post", "BODY");
+            var timeOfRequest = DateTime.Now;
+
+            Thread.Sleep(300);
+
+            var requests = Sim.ReceivedRequests;
+            var firstRequest = requests[0];
+            var diff = (firstRequest.TimeOfRequest - timeOfRequest);
+            Math.Abs(diff.TotalMilliseconds).ShouldBeLessThan(10);
+        }
+
+        [Test]
         public void CanGetPreviousRequestBodyAsString()
         {
             Sim.Post("/post").Responds("OK");
