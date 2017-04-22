@@ -92,18 +92,19 @@ In addition to configuring the responses to specific URLs you can assert that th
     //Received requests is an list of ReceivedRequest which has the following data
     public class ReceivedRequest
     {
-        public Uri Url { get; set; }
-        public string HttpMethod { get; set; }
-        public Encoding ContentEncoding { get; set; }
-        public string[] AcceptTypes { get; set; }
-        public string ContentType { get; set; }
-        public NameValueCollection Headers { get; set; }
-        public CookieCollection Cookies { get; set; }
-        public NameValueCollection QueryString { get; set; }
-        public string RawUrl { get; set; }
-        public string UserAgent { get; set; }
-        public string[] UserLanguage { get; set; }
-        public string RequestBody { get; set; }
+        public Uri Url { get; }
+        public string HttpMethod { get; }
+        public Encoding ContentEncoding { get; }
+        public string[] AcceptTypes { get; }
+        public string ContentType { get; }
+        public NameValueCollection Headers { get; }
+        public CookieCollection Cookies { get; }
+        public NameValueCollection QueryString { get; }
+        public string RawUrl { get; }
+        public string UserAgent { get; }
+        public string[] UserLanguage { get; }
+        public string RequestBody { get; }
+        public DateTime TimeOfRequest { get; }
     }
 ```
 
