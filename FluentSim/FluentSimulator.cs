@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Text;
+using System.Threading;
 using Newtonsoft.Json;
 
 namespace FluentSim
@@ -18,6 +19,7 @@ namespace FluentSim
         private JsonSerializerSettings JsonSerializer;
         public List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
         public IReadOnlyList<ReceivedRequest> ReceivedRequests => IncomingRequests.AsReadOnly();
+        private bool CorsEnabled { get; set; }
 
         public FluentSimulator(string address)
         {
@@ -48,7 +50,6 @@ namespace FluentSim
             }
             catch (Exception e)
             {
-                Stop();
                 ListenerExceptions.Add(e);
             }
         }
@@ -59,8 +60,22 @@ namespace FluentSim
             var response = context.Response;
             var request = context.Request;
 
+            if (CorsEnabled)
+            {
+                response.AddHeader("Access-Control-Allow-Origin", "*");
+                response.AddHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+            }
+
+            if (CorsEnabled && request.HttpMethod.ToUpperInvariant() == "OPTIONS")
+            {
+                response.Close();
+                BeginGetContext();
+                return;
+            }
+
             var matchingRoute = ConfiguredRoutes.FirstOrDefault(route => route.DoesRouteMatch(context.Request));
-            AddIncomingRequest(request);
+            var receivedRequest = GetReceivedRequest(request);
+            IncomingRequests.Add(receivedRequest);
 
             if (matchingRoute == null)
             {
@@ -70,7 +85,9 @@ namespace FluentSim
                 return;
             }
 
+            matchingRoute.AddReceivedRequest(receivedRequest);
             matchingRoute.WaitUntilReadyToRespond();
+
             matchingRoute.RunContextModifiers(context);
 
             byte[] buffer = Encoding.UTF8.GetBytes(matchingRoute.GetBody());
@@ -82,11 +99,11 @@ namespace FluentSim
             BeginGetContext();
         }
 
-        private void AddIncomingRequest(HttpListenerRequest request)
+        private ReceivedRequest GetReceivedRequest(HttpListenerRequest request)
         {
             var body = new StreamReader(request.InputStream).ReadToEnd();
 
-            IncomingRequests.Add(new ReceivedRequest(JsonSerializer)
+            var receivedRequest = new ReceivedRequest(JsonSerializer)
             {
                 Url = request.Url,
                 HttpMethod = request.HttpMethod,
@@ -101,7 +118,8 @@ namespace FluentSim
                 UserLanguage = request.UserLanguages,
                 RequestBody = body,
                 TimeOfRequest = DateTime.Now
-            });
+            };
+            return receivedRequest;
         }
 
         private void BeginGetContext()
@@ -164,5 +182,12 @@ namespace FluentSim
         {
             return InitialiseRoute(routePath, HttpVerb.Put);
         }
+
+
+        public void EnableCors()
+        {
+            CorsEnabled = true;
+        }
+
     }
 }
