@@ -129,9 +129,7 @@ namespace FluentSim
 
         public RouteConfigurer Post(string path)
         {
-            var routeConfig = new FluentConfigurator(path, HttpVerb.Post, JsonSerializer);
-            ConfiguredRoutes.Add(routeConfig);
-            return routeConfig;
+            return InitialiseRoute(path, HttpVerb.Post);
         }
 
         public RouteConfigurer Get(string path)
@@ -142,7 +140,7 @@ namespace FluentSim
         private RouteConfigurer InitialiseRoute(string path, HttpVerb verb)
         {
             var routeConfig = new FluentConfigurator(path, verb, JsonSerializer);
-            ConfiguredRoutes.Add(routeConfig);
+            ConfiguredRoutes.Insert(0, routeConfig);
             return routeConfig;
         }
 

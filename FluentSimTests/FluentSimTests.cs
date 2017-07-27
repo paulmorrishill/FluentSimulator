@@ -376,6 +376,14 @@ namespace FluentSimTests
             post.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldEqual("original");
         }
 
+        [Test]
+        public void SequentialSetupsOverwriteThePreviousSetups()
+        {
+            Sim.Post("/post").Responds("OK");
+            Sim.Post("/post").Responds("OK2");
+            MakePostRequest("/post", "").Content.ShouldEqual("OK2");
+        }
+
         private class AllFieldsReplacementConverter : JsonConverter
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
