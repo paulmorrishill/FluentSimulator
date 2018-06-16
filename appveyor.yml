@@ -142,8 +142,6 @@ deploy:
       secure: KLxTjKZyHBU5ZisYfhmTwgBZQvE3LEB4JX88DNsUscp/AxzHD20EXbRGmGmuzH7Q
   #  skip_symbols: false
   #  symbol_server: https://your.symbol.server/feed
-    artifact: FluentSim.*.nupkg
-
     # Deploy to GitHub Releases
   #- provider: GitHub
   #  artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
