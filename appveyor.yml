@@ -121,8 +121,6 @@ test:
 #---------------------------------#
 
 artifacts:
-
-
   # pushing all *.nupkg files in build directory recursively
   - path: '**\FluentSim.nupkg'
 
@@ -141,7 +139,7 @@ deploy:
   - provider: NuGet
   #  server: https://my.nuget.server/feed
     api_key:
-      secure: u6nm7Lc15n40mgSpdBJqtewbpsVECKmNpiZV4+hR1gUfVDk0gwLsFVdb0krUYaT5
+      secure: KLxTjKZyHBU5ZisYfhmTwgBZQvE3LEB4JX88DNsUscp/AxzHD20EXbRGmGmuzH7Q
   #  skip_symbols: false
   #  symbol_server: https://your.symbol.server/feed
     artifact: FluentSim.nupkg
