@@ -124,7 +124,7 @@ artifacts:
 
 
   # pushing all *.nupkg files in build directory recursively
-  - path: '**\*.nupkg'
+  - path: '**\FluentSim.nupkg'
 
 before_build:
     nuget restore
