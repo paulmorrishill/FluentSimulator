@@ -138,13 +138,13 @@ before_build:
 deploy:
 
     # Deploying to NuGet feed
-  #- provider: NuGet
+  - provider: NuGet
   #  server: https://my.nuget.server/feed
-  #  api_key:
-  #    secure: FYWX6NfjZIVw==
+    api_key:
+      secure: u6nm7Lc15n40mgSpdBJqtewbpsVECKmNpiZV4+hR1gUfVDk0gwLsFVdb0krUYaT5
   #  skip_symbols: false
   #  symbol_server: https://your.symbol.server/feed
-  #  artifact: MyPackage.nupkg
+    artifact: FluentSim.nupkg
 
     # Deploy to GitHub Releases
   #- provider: GitHub
