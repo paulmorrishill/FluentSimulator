@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using FluentSim;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using NSubstitute;
 using NUnit.Framework;
 using RestSharp;
 using RestSharp.Serializers;
@@ -139,7 +140,7 @@ namespace FluentSimTests
             ResumeTheRouteInHalfASecond(route);
             MakeGetRequest("/path").Content.ShouldEqual("SOMEOUTPUT");
             timer.Stop();
-            timer.ElapsedMilliseconds.ShouldBeGreaterThan(500);
+            timer.ElapsedMilliseconds.ShouldBeGreaterThan(499);
         }
 
         [Test]
@@ -234,6 +235,27 @@ namespace FluentSimTests
             MakeVerbRequest(Sim.Put("/test"), Method.PUT);
         }
 
+        [Test]
+        public void CanMakeRegexRequest()
+        {
+            Sim.Get("/test[0-9]").MatchingRegex().Responds("output1");
+            MakeGetRequest("/test1").Content.ShouldEqual("output1");
+        }
+
+        [Test]
+        public void CanMakeComplexRegexRequest()
+        {
+            Sim.Get(@"api\/.*\/read\/Business\/Business.*").MatchingRegex().Responds("Output");
+            MakeGetRequest("/api/02b9863e-cb07-c62d-50a9-8ecb40aa85b6/read/Business/Business/").Content.ShouldEqual("Output");
+        }
+
+        [Test]
+        public void CanMatchRegexNotEndingInSlash()
+        {
+            Sim.Get("/test[0-9]").MatchingRegex().Responds("output1");
+            MakeGetRequest("/test1sdfsdfds").Content.ShouldEqual("output1");
+        }
+
         private void MakeVerbRequest(RouteConfigurer configurer, Method verb)
         {
             if (verb == Method.HEAD)
@@ -313,6 +335,53 @@ namespace FluentSimTests
             MakePostRequest("/test", @"{""TestField"":""original""}");
 
             Sim.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldEqual("REPLACEMENT");
+        }
+
+        [Test]
+        public void CanAddCorsHeaders()
+        {
+            Sim.EnableCors();
+            Sim.Post("/test");
+            var resp = MakePostRequest("/test", @"{""TestField"":""original""}");
+            AssertResponseContainsCorsHeaders(resp);
+        }
+
+        private static void AssertResponseContainsCorsHeaders(IRestResponse resp)
+        {
+            resp.Headers.First(n => n.Name == "Access-Control-Allow-Origin").Value.ShouldEqual("*");
+            resp.Headers.First(n => n.Name == "Access-Control-Allow-Headers").Value.ShouldEqual("Authorization, Content-Type");
+        }
+
+        [Test]
+        public void CanRespondToPreflightWithCorsHeaders()
+        {
+            Sim.EnableCors();
+            Sim.Post("/test").Responds("TEST OUTPUT");
+            var resp = MakeRequest("/test", Method.OPTIONS);
+            AssertResponseContainsCorsHeaders(resp);
+
+            MakePostRequest("/test", new object()).Content.ShouldEqual("TEST OUTPUT");
+        }
+
+        [Test]
+        public void CanGetTheRequestsToAMatchingRoute()
+        {
+            var post = Sim.Post("/test").Responds("POST").History();
+            var get = Sim.Get("/test").Responds("GET").History();
+            MakePostRequest("/test", @"{""TestField"":""original""}");
+            MakeRequest("/test", Method.GET);
+            MakeRequest("/test", Method.GET);
+            get.ReceivedRequests.Count.ShouldEqual(2);
+            post.ReceivedRequests.Count.ShouldEqual(1);
+            post.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldEqual("original");
+        }
+
+        [Test]
+        public void SequentialSetupsOverwriteThePreviousSetups()
+        {
+            Sim.Post("/post").Responds("OK");
+            Sim.Post("/post").Responds("OK2");
+            MakePostRequest("/post", "").Content.ShouldEqual("OK2");
         }
 
         private class AllFieldsReplacementConverter : JsonConverter

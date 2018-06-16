@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Newtonsoft.Json;
 
@@ -16,6 +17,7 @@ namespace FluentSim
         private TimeSpan RouteDelay;
         private List<Action<HttpListenerContext>> ResponseModifiers = new List<Action<HttpListenerContext>>();
         private JsonSerializerSettings JsonSerializerSettings;
+        private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
@@ -25,6 +27,12 @@ namespace FluentSim
         }
 
         public HttpMethod Method { get; set; }
+        public bool IsRegex { get; set; }
+
+        public void AddReceivedRequest(ReceivedRequest request)
+        {
+            ReceivedRequests.Add(request);
+        }
 
         public RouteConfigurer Responds<T>(T output)
         {
@@ -68,6 +76,12 @@ namespace FluentSim
             return this;
         }
 
+        public RouteConfigurer MatchingRegex()
+        {
+            IsRegex = true;
+            return this;
+        }
+
         internal string GetBody()
         {
             return Output;
@@ -75,13 +89,23 @@ namespace FluentSim
 
         internal bool DoesRouteMatch(HttpListenerRequest contextRequest)
         {
-            if (!Path.EndsWith("/")) Path += "/";
+            if (!Path.EndsWith("/") && !IsRegex) Path += "/";
             var requestPath = contextRequest.Url.LocalPath;
             if (!requestPath.EndsWith("/")) requestPath += "/";
 
-            var pathMatches = requestPath.ToLower() == Path.ToLower();
+            var pathMatches = DoesPathMatch(requestPath);
             var verbMatches = HttpVerb.ToString().ToUpper() == contextRequest.HttpMethod;
             return pathMatches && verbMatches;
+        }
+
+        private bool DoesPathMatch(string requestPath)
+        {
+            if (IsRegex)
+            {
+                return Regex.Match(requestPath.ToLower(), Path.ToLower()).Success;
+            }
+
+            return string.Equals(requestPath, Path, StringComparison.CurrentCultureIgnoreCase);
         }
 
         internal void WaitUntilReadyToRespond()
@@ -106,5 +130,20 @@ namespace FluentSim
             ResponseModifiers.Add(ctx => ctx.Response.SetCookie(cookie));
             return this;
         }
+
+        public IRouteHistory History()
+        {
+            return new RouteHistory(ReceivedRequests.AsReadOnly());
+        }
+
+        private class RouteHistory : IRouteHistory
+        {
+            public RouteHistory(IReadOnlyList<ReceivedRequest> requests)
+            {
+                ReceivedRequests = requests;
+            }
+            public IReadOnlyList<ReceivedRequest> ReceivedRequests { get; }
+        }
     }
+
 }
