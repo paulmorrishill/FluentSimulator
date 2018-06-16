@@ -13,7 +13,7 @@
 		</dependencies>
     </metadata>
 	<files>
-		<file src="FluentSim\bin\Release\FluentSim.dll" target="lib\FluentSim.dll"></file>
-		<file src="FluentSim\bin\Release\FluentSim.pdb" target="lib\FluentSim.pdb"></file>
+		<file src="bin\Release\FluentSim.dll" target="lib\FluentSim.dll"></file>
+		<file src="bin\Release\FluentSim.pdb" target="lib\FluentSim.pdb"></file>
 	</files>
 </package>
