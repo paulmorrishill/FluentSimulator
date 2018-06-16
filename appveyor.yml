@@ -122,7 +122,7 @@ test:
 
 artifacts:
   # pushing all *.nupkg files in build directory recursively
-  - path: '**\FluentSim.nupkg'
+  - path: '**\FluentSim.{version}.nupkg'
 
 before_build:
     nuget restore
@@ -142,7 +142,7 @@ deploy:
       secure: KLxTjKZyHBU5ZisYfhmTwgBZQvE3LEB4JX88DNsUscp/AxzHD20EXbRGmGmuzH7Q
   #  skip_symbols: false
   #  symbol_server: https://your.symbol.server/feed
-    artifact: FluentSim.nupkg
+    artifact: FluentSim.{version}.nupkg
 
     # Deploy to GitHub Releases
   #- provider: GitHub
