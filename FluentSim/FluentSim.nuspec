@@ -3,7 +3,7 @@
     <metadata>
         <!-- Required elements-->
         <id>FluentSimulator</id>
-        <version>1.0.0</version>
+        <version>$version$</version>
         <description>FluentSimulator is a .Net HTTP API simulator library that is extremely versitile and unassuming.</description>
         <authors>Paul Morris-Hill</authors>
 		<projectUrl>https://github.com/paulmorrishill/FluentSimulator</projectUrl>
