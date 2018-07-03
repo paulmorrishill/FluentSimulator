@@ -6,6 +6,7 @@ namespace FluentSim
     public interface RouteConfigurer
     {
         RouteConfigurer Responds<T>(T output);
+        RouteConfigurer Responds(byte[] output);
         RouteConfigurer Responds();
         RouteConfigurer Responds(string output);
         RouteConfigurer MatchingRegex();

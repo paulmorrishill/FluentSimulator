@@ -90,7 +90,10 @@ namespace FluentSim
 
             matchingRoute.RunContextModifiers(context);
 
-            byte[] buffer = Encoding.UTF8.GetBytes(matchingRoute.GetBody());
+            byte[] buffer = matchingRoute.BinaryOutput;
+
+            if(buffer == null)
+                buffer = Encoding.UTF8.GetBytes(matchingRoute.GetBody());
 
             response.ContentLength64 = buffer.Length;
             var output = response.OutputStream;

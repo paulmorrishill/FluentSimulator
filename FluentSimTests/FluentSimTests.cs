@@ -64,6 +64,12 @@ namespace FluentSimTests
 
         private static IRestResponse MakeRequest(string path, Method verb, object body = null)
         {
+            var resp = MakeRawRequest(path, verb, body);
+            return resp;
+        }
+
+        private static IRestResponse MakeRawRequest(string path, Method verb, object body = null)
+        {
             var request = new RestRequest(path, verb);
             if (body != null) request.AddParameter("text/json", body, ParameterType.RequestBody);
             var client = new RestClient(BaseAddress);
@@ -197,6 +203,15 @@ namespace FluentSimTests
                 .Responds(new TestObject());
 
             MakePostRequest("/test", "").Content.ShouldEqual(@"{""TestField"":""ThisValue""}");
+        }
+
+        [Test]
+        public void CanGetBinaryDataObject()
+        {
+            Sim.Post("/test")
+                .Responds(new byte[] { 1, 2, 3, 4 });
+
+            MakeRawRequest("/test", Method.POST).RawBytes.ShouldEqual(new byte[] { 1, 2, 3, 4 });
         }
 
         [Test]

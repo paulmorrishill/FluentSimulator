@@ -18,6 +18,7 @@ namespace FluentSim
         private List<Action<HttpListenerContext>> ResponseModifiers = new List<Action<HttpListenerContext>>();
         private JsonSerializerSettings JsonSerializerSettings;
         private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
+        public byte[] BinaryOutput = null;
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
@@ -37,6 +38,12 @@ namespace FluentSim
         public RouteConfigurer Responds<T>(T output)
         {
             Output = JsonConvert.SerializeObject(output, JsonSerializerSettings);
+            return this;
+        }
+
+        public RouteConfigurer Responds(byte[] output)
+        {
+            BinaryOutput = output;
             return this;
         }
 
