@@ -399,6 +399,28 @@ namespace FluentSimTests
             MakePostRequest("/post", "").Content.ShouldEqual("OK2");
         }
 
+        [Test]
+        public async Task CanMakeGetRequestWithQueryString()
+        {
+            var queryString = "/test?key=value";
+            Sim.Get("/test").WithParameter("key", "value").Responds("OK");
+            var result = MakeGetRequest(queryString);
+            result.Content.ShouldEqual("OK");
+        }
+
+        [Test]
+        public async Task CanMakeGetRequestWithMultipleQueryStringsOutOfOrder()
+        {
+            var queryString = "/test?key=value&key1=value1&key2=value2";
+            Sim.Get("/test")
+                .WithParameter("key", "value")
+                .WithParameter("key2", "value2")
+                .WithParameter("key1", "value1")
+                .Responds("OK");
+            var result = MakeGetRequest(queryString);
+            result.Content.ShouldEqual("OK");
+        }
+
         private class AllFieldsReplacementConverter : JsonConverter
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
