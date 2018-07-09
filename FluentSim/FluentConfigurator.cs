@@ -106,20 +106,20 @@ namespace FluentSim
             if (!Path.EndsWith("/") && !IsRegex) Path += "/";
             var requestPath = contextRequest.Url.LocalPath;
             if (!requestPath.EndsWith("/")) requestPath += "/";
-
-
-            var allKeysMatch = true;
+            
             var queryString = contextRequest.QueryString;
+            if (queryString.Count != QueryParameters.Count)
+                return false;
             foreach (string s in queryString)
             {
-                allKeysMatch = queryString[s].Equals(QueryParameters[s]);
+                var allKeysMatch = queryString[s].Equals(QueryParameters[s]);
                 if (!allKeysMatch)
-                    break;
+                    return false;
             }
 
             var pathMatches = DoesPathMatch(requestPath);
             var verbMatches = HttpVerb.ToString().ToUpper() == contextRequest.HttpMethod;
-            return pathMatches && verbMatches && allKeysMatch;
+            return pathMatches && verbMatches;
         }
 
         private bool DoesPathMatch(string requestPath)
