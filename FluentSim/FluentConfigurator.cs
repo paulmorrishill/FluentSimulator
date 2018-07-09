@@ -19,6 +19,7 @@ namespace FluentSim
         private JsonSerializerSettings JsonSerializerSettings;
         private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
         public byte[] BinaryOutput = null;
+        public Dictionary<string, string> QueryParameters = new Dictionary<string, string>();
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
@@ -56,6 +57,12 @@ namespace FluentSim
         public RouteConfigurer WithHeader(string headerName, string headerValue)
         {
             ResponseModifiers.Add(ctx => ctx.Response.AddHeader(headerName, headerValue));
+            return this;
+        }
+
+        public RouteConfigurer WithParameter(string key, string value)
+        {
+            QueryParameters.Add(key, value);
             return this;
         }
 
@@ -99,6 +106,16 @@ namespace FluentSim
             if (!Path.EndsWith("/") && !IsRegex) Path += "/";
             var requestPath = contextRequest.Url.LocalPath;
             if (!requestPath.EndsWith("/")) requestPath += "/";
+            
+            var queryString = contextRequest.QueryString;
+            if (queryString.Count != QueryParameters.Count)
+                return false;
+            foreach (string s in queryString)
+            {
+                var allKeysMatch = queryString[s].Equals(QueryParameters[s]);
+                if (!allKeysMatch)
+                    return false;
+            }
 
             var pathMatches = DoesPathMatch(requestPath);
             var verbMatches = HttpVerb.ToString().ToUpper() == contextRequest.HttpMethod;

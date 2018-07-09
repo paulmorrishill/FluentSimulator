@@ -12,6 +12,7 @@ namespace FluentSim
         RouteConfigurer MatchingRegex();
         RouteConfigurer WithCode(int code);
         RouteConfigurer WithHeader(string headerName, string headerValue);
+        RouteConfigurer WithParameter(string key, string value);
         RouteConfigurer Delay(TimeSpan routeDelay);
         RouteConfigurer Pause();
         RouteConfigurer Resume();
