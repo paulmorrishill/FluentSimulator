@@ -103,8 +103,8 @@ The simulator can be very useful in testing outputs that aren't easy to create r
 Want to see how your code handles 500 server errors, or 404s?
 
 ```c#
-    simulator.Get("/my/route").Responds().WithCode(500);
-    simulator.Get("/employee/44").Responds().WithCode(404);
+simulator.Get("/my/route").Responds().WithCode(500);
+simulator.Get("/employee/44").Responds().WithCode(404);
 ```
 
 ## Headers
