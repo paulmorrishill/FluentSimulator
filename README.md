@@ -26,22 +26,78 @@ Using the simulator is designed to be extremely easy.
     //200 Some example content here
 ```
 
+Make sure to shutdown the simulator at the end of your unit test (usually in a teardown method) - 
+this will prevent subsequent tests failing on the port being in use.
+
+
+```c#
+    [TearDown]
+    public void TearDown()
+    {
+       //Stop the simulator
+       simulator.Stop();  
+    }
+```
+
+# Request matching
+The simulator can be configured in a few different ways to choose the appropriate response to requests.
+
+## Simple requests
+Simple plain text path matching can be done with the specific verb methods. If the status code is not specified the simulator returns 200.
+
+```c#
+    // Match http://localhost:8080/test
+    simulator.Post("/test").Responds("Hello World!");
+    simulator.Get("/test").Responds("Hello World!");
+    simulator.Delete("/test").Responds("Hello World!");
+    simulator.Head("/test").Responds("Hello World!");
+    simulator.Merge("/test").Responds("Hello World!");
+    simulator.Options("/test").Responds("Hello World!");
+    simulator.Patch("/test").Responds("Hello World!");
+    simulator.Put("/test").Responds("Hello World!");
+    simulator.Post("/").Responds("Hello World!");
+        
+    // Match GET http://localhost:8080/some/extended/path/here.html
+    simulator.Get("/some/extended/path/here.html").Responds("Hello World!");
+```
+
+## Regex matching
+You can match additionally by regex on any of the verb methods by appending the ```.MatchingRegex()``` call.
+
+```c#
+    // Match on Regex
+    // e.g. GET http://localhost:8080/user/42/profile
+    simulator.Get("/user/[0-9]+/profile")
+             .MatchingRegex()   
+             .Responds("Super cool profile data")
+```
+
+## Matching on query parameters
+You can also match on query parameters using the WithParameter method. 
+
+- Parameter order does not matter
+- Parameters are case sensitive for both key and value
+- Query parameters should be passed in raw - the simulator deals with URL decoding
+
+```c#
+    // Match on query parameters
+    // e.g. GET http://localhost:8080/viewprofile.php?id=123
+    simulator.Get("/viewprofile.php")
+             .WithParameter("id", "123")
+             .Responds("Some profile stuff");
+
+     // Query parameters with special characters
+     // e.g. GET http://localhost:8080/viewprofile.php?id=SOME-%C2%A3%24%25%5E%26-ID
+     simulator.Get("/viewprofile.php")
+                  .WithParameter("id", "SOME-£$%^&-ID")
+                  .Responds("OK");
+```
+
+## Non matching requests
+Any request that does not match any configured responses will return a 501 Not Implemented status code and an empty response body.
+
 # Responding to requests
-The simulator provides some useful functions and can be very useful in testing outputs that aren't easy to recreate using real endpoints.
-
-## Serialize objects
-You can return objects through the simulator and they will be converted to JSON before being sent.
-
-```c#
-    simulator.Put("/employee/1").Responds(new EmployeeModel());
-```
-
-### Configuring the serializer
-Internally the simulator uses the Newtonsoft [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) library you can pass in your own serializer settings.
-
-```c#
-    var simulator = new FluentSimulator("http://localhost:8080/", new JsonSerialiserSettings());
-```
+The simulator can be very useful in testing outputs that aren't easy to create reliably on demand using real endpoints.
 
 ## Status codes
 Want to see how your code handles 500 server errors, or 404s?
@@ -78,6 +134,20 @@ You can check that your webpage correctly displays loading messages or spinners.
     //Assert page shows "Loading employee details..."
     route.Resume();
     //Assert page shows the employee information
+```
+
+## Serialize objects
+You can return objects through the simulator and they will be converted to JSON before being sent.
+
+```c#
+    simulator.Put("/employee/1").Responds(new EmployeeModel());
+```
+
+### Configuring the serializer
+Internally the simulator uses the Newtonsoft [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) library you can pass in your own serializer settings.
+
+```c#
+    var simulator = new FluentSimulator("http://localhost:8080/", new JsonSerialiserSettings());
 ```
 
 # Asserting on requests
