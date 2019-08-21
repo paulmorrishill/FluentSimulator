@@ -107,6 +107,16 @@ Want to see how your code handles 500 server errors, or 404s?
     simulator.Get("/employee/44").Responds().WithCode(404);
 ```
 
+## Headers
+Arbitrary headers can be appended to the response.
+
+```c#
+	simulator.Get("/employee/123")
+			 .Responds("{}")
+			 .WithHeader("Content-Type", "application/json")
+			 .WithHeader("X-Powered-By", "Rainbows and sunshine");
+```
+
 ## Cookies
 You can send cookies.
 
