@@ -73,7 +73,7 @@ You can match additionally by regex on any of the verb methods by appending the 
 ```
 
 ## Matching on query parameters
-You can also match on query parameters using the WithParameter method. 
+You can also match on query parameters using the ```WithParameter``` method. 
 
 - Parameter order does not matter
 - Parameters are case sensitive for both key and value
@@ -94,7 +94,7 @@ You can also match on query parameters using the WithParameter method.
 ```
 
 ## Non matching requests
-Any request that does not match any configured responses will return a 501 Not Implemented status code and an empty response body.
+Any request that does not match any configured responses will return a *501 Not Implemented* status code and an empty response body.
 
 # Responding to requests
 The simulator can be very useful in testing outputs that aren't easy to create reliably on demand using real endpoints.
