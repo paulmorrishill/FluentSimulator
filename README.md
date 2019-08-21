@@ -14,16 +14,16 @@ There are 2 main use cases for FluentSimulator.
 Using the simulator is designed to be extremely easy.
 
 ```c#
-    //Initialise the simulator
-    var simulator = new FluentSimulator("http://localhost:8080/");
-    simulator.Start();
-    
-    //Setup your simulated routes and responses
-    simulator.Get("/my/route").Responds("Some example content here");
+//Initialise the simulator
+var simulator = new FluentSimulator("http://localhost:8080/");
+simulator.Start();
 
-    //Now make an HTTP request using whatever means
-    //GET http://localhost:8080/my/route
-    //200 Some example content here
+//Setup your simulated routes and responses
+simulator.Get("/my/route").Responds("Some example content here");
+
+//Now make an HTTP request using whatever means
+//GET http://localhost:8080/my/route
+//200 Some example content here
 ```
 
 Make sure to shutdown the simulator at the end of your unit test (usually in a teardown method) - 
@@ -31,12 +31,12 @@ this will prevent subsequent tests failing on the port being in use.
 
 
 ```c#
-    [TearDown]
-    public void TearDown()
-    {
-       //Stop the simulator
-       simulator.Stop();  
-    }
+[TearDown]
+public void TearDown()
+{
+   //Stop the simulator
+   simulator.Stop();  
+}
 ```
 
 # Request matching
@@ -46,30 +46,30 @@ The simulator can be configured in a few different ways to choose the appropriat
 Simple plain text path matching can be done with the specific verb methods. If the status code is not specified the simulator returns 200.
 
 ```c#
-    // Match http://localhost:8080/test
-    simulator.Post("/test").Responds("Hello World!");
-    simulator.Get("/test").Responds("Hello World!");
-    simulator.Delete("/test").Responds("Hello World!");
-    simulator.Head("/test").Responds("Hello World!");
-    simulator.Merge("/test").Responds("Hello World!");
-    simulator.Options("/test").Responds("Hello World!");
-    simulator.Patch("/test").Responds("Hello World!");
-    simulator.Put("/test").Responds("Hello World!");
-    simulator.Post("/").Responds("Hello World!");
-        
-    // Match GET http://localhost:8080/some/extended/path/here.html
-    simulator.Get("/some/extended/path/here.html").Responds("Hello World!");
+// Match http://localhost:8080/test
+simulator.Post("/test").Responds("Hello World!");
+simulator.Get("/test").Responds("Hello World!");
+simulator.Delete("/test").Responds("Hello World!");
+simulator.Head("/test").Responds("Hello World!");
+simulator.Merge("/test").Responds("Hello World!");
+simulator.Options("/test").Responds("Hello World!");
+simulator.Patch("/test").Responds("Hello World!");
+simulator.Put("/test").Responds("Hello World!");
+simulator.Post("/").Responds("Hello World!");
+    
+// Match GET http://localhost:8080/some/extended/path/here.html
+simulator.Get("/some/extended/path/here.html").Responds("Hello World!");
 ```
 
 ## Regex matching
 You can match additionally by regex on any of the verb methods by appending the ```.MatchingRegex()``` call.
 
 ```c#
-    // Match on Regex
-    // e.g. GET http://localhost:8080/user/42/profile
-    simulator.Get("/user/[0-9]+/profile")
-             .MatchingRegex()   
-             .Responds("Super cool profile data")
+// Match on Regex
+// e.g. GET http://localhost:8080/user/42/profile
+simulator.Get("/user/[0-9]+/profile")
+         .MatchingRegex()   
+         .Responds("Super cool profile data")
 ```
 
 ## Matching on query parameters
@@ -80,17 +80,17 @@ You can also match on query parameters using the ```WithParameter``` method.
 - Query parameters should be passed in raw - the simulator deals with URL decoding
 
 ```c#
-    // Match on query parameters
-    // e.g. GET http://localhost:8080/viewprofile.php?id=123
-    simulator.Get("/viewprofile.php")
-             .WithParameter("id", "123")
-             .Responds("Some profile stuff");
+// Match on query parameters
+// e.g. GET http://localhost:8080/viewprofile.php?id=123
+simulator.Get("/viewprofile.php")
+         .WithParameter("id", "123")
+         .Responds("Some profile stuff");
 
-     // Query parameters with special characters
-     // e.g. GET http://localhost:8080/viewprofile.php?id=SOME-%C2%A3%24%25%5E%26-ID
-     simulator.Get("/viewprofile.php")
-                  .WithParameter("id", "SOME-£$%^&-ID")
-                  .Responds("OK");
+ // Query parameters with special characters
+ // e.g. GET http://localhost:8080/viewprofile.php?id=SOME-%C2%A3%24%25%5E%26-ID
+ simulator.Get("/viewprofile.php")
+          .WithParameter("id", "SOME-£$%^&-ID")
+          .Responds("OK");
 ```
 
 ## Non matching requests
@@ -111,96 +111,96 @@ Want to see how your code handles 500 server errors, or 404s?
 Arbitrary headers can be appended to the response.
 
 ```c#
-	simulator.Get("/employee/123")
-			 .Responds("{}")
-			 .WithHeader("Content-Type", "application/json")
-			 .WithHeader("X-Powered-By", "Rainbows and sunshine");
+simulator.Get("/employee/123")
+         .Responds("{}")
+         .WithHeader("Content-Type", "application/json")
+         .WithHeader("X-Powered-By", "Rainbows and sunshine");
 ```
 
 ## Cookies
 You can send cookies.
 
 ```c#
-    simulator.Post("/authenticate")
-             .Responds()
-             .WithCookie(new Cookie("Token", "ABCDEF"));
+simulator.Post("/authenticate")
+         .Responds()
+         .WithCookie(new Cookie("Token", "ABCDEF"));
 ```
 
 ## Slow responses
 You can test how your code handles slow server replies.
 
 ```c#
-    simulator.Get("/my/route").Responds("Final output").Delay(TimeSpan.FromSeconds(30));
+simulator.Get("/my/route").Responds("Final output").Delay(TimeSpan.FromSeconds(30));
 ```
 
 ## Indefinitely suspend responses at runtime
 You can check that your webpage correctly displays loading messages or spinners.
 
 ```c#
-    var route = simulator.Get("/employee/1").Responds("John Smith");
-    //Navigate to your page using selenium
-    route.Pause();
-    //Click "John Smith"
-    //Assert page shows "Loading employee details..."
-    route.Resume();
-    //Assert page shows the employee information
+var route = simulator.Get("/employee/1").Responds("John Smith");
+//Navigate to your page using selenium
+route.Pause();
+//Click "John Smith"
+//Assert page shows "Loading employee details..."
+route.Resume();
+//Assert page shows the employee information
 ```
 
 ## Serialize objects
 You can return objects through the simulator and they will be converted to JSON before being sent.
 
 ```c#
-    simulator.Put("/employee/1").Responds(new EmployeeModel());
+simulator.Put("/employee/1").Responds(new EmployeeModel());
 ```
 
 ### Configuring the serializer
 Internally the simulator uses the Newtonsoft [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) library you can pass in your own serializer settings.
 
 ```c#
-    var simulator = new FluentSimulator("http://localhost:8080/", new JsonSerialiserSettings());
+var simulator = new FluentSimulator("http://localhost:8080/", new JsonSerialiserSettings());
 ```
 
 # Asserting on requests
 In addition to configuring the responses to specific URLs you can assert that the request contained all the information you're expecting.
 
 ```c#
-    simulator.Post("/post").Responds("OK");
-    //POST http://localhost/post
-    
-    var requests = simulator.ReceivedRequests;
-    var sentAuthHeader = requests[0].Headers["Authorization"]
-    //Assert sentAuthHeader is correct
-    
-    //Received requests is an list of ReceivedRequest which has the following data
-    public class ReceivedRequest
-    {
-        public Uri Url { get; }
-        public string HttpMethod { get; }
-        public Encoding ContentEncoding { get; }
-        public string[] AcceptTypes { get; }
-        public string ContentType { get; }
-        public NameValueCollection Headers { get; }
-        public CookieCollection Cookies { get; }
-        public NameValueCollection QueryString { get; }
-        public string RawUrl { get; }
-        public string UserAgent { get; }
-        public string[] UserLanguage { get; }
-        public string RequestBody { get; }
-        public DateTime TimeOfRequest { get; }
-    }
+simulator.Post("/post").Responds("OK");
+//POST http://localhost/post
+
+var requests = simulator.ReceivedRequests;
+var sentAuthHeader = requests[0].Headers["Authorization"]
+//Assert sentAuthHeader is correct
+
+//Received requests is an list of ReceivedRequest which has the following data
+public class ReceivedRequest
+{
+    public Uri Url { get; }
+    public string HttpMethod { get; }
+    public Encoding ContentEncoding { get; }
+    public string[] AcceptTypes { get; }
+    public string ContentType { get; }
+    public NameValueCollection Headers { get; }
+    public CookieCollection Cookies { get; }
+    public NameValueCollection QueryString { get; }
+    public string RawUrl { get; }
+    public string UserAgent { get; }
+    public string[] UserLanguage { get; }
+    public string RequestBody { get; }
+    public DateTime TimeOfRequest { get; }
+}
 ```
 
 ## Deserializing requests
 You can also deserialize the request using the ```BodyAs<T>``` method on the ```ReceivedRequest``` object.
 
 ```c#
-    simulator.Post("/employee").Responds("OK");
-    //POST http://localhost/post
-    
-    var requests = simulator.ReceivedRequests;
-    var sentEmployee = requests[0].BodyAs<EmployeeModel>();
-    
-    Assert.AreEqual(sentEmployee.FirstName, "John");
+simulator.Post("/employee").Responds("OK");
+//POST http://localhost/post
+
+var requests = simulator.ReceivedRequests;
+var sentEmployee = requests[0].BodyAs<EmployeeModel>();
+
+Assert.AreEqual(sentEmployee.FirstName, "John");
 ```
 
 # Contributing
