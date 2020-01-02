@@ -78,8 +78,29 @@ dotnet_csproj:
 #       build configuration       #
 #---------------------------------#
 
-build_script:
-  - ps: dotnet build ".\FluentSim\FluentSim.csproj" --configuration Release --verbosity detailed
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+# platform: Any CPU
+
+# to add several platforms to build matrix:
+#platform:
+#  - x86
+#  - Any CPU
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
+# to add several configurations to build matrix:
+#configuration:
+#  - Debug
+#  - Release
+
+build:
+  parallel: true                  # enable MSBuild parallel builds
+  project: FluentSim.sln          # path to Visual Studio solution or project
+  publish_nuget: false            # package projects with .nuspec files and push to artifacts
+
+  # MSBuild verbosity level
+  verbosity: normal
 
 #---------------------------------#
 #       tests configuration       #
@@ -112,7 +133,6 @@ deploy:
   #  server: https://my.nuget.server/feed
     api_key:
       secure: HMp6b4NigywSudx9+nVIr2gZaQWUdiOkUQE3jKQ7ung0Pwb/5Qcy8KA1HeZXywGw
-    artifact: 'FluentSim\bin\Release\FluentSim.{version}.nupkg'
   #  skip_symbols: false
   #  symbol_server: https://your.symbol.server/feed
   # Deploy to GitHub Releases
