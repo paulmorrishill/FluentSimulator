@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.25928.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29609.76
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentSim", "FluentSim\FluentSim.csproj", "{0855EC3E-6187-4CD5-97C2-7E3EE928D665}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FluentSim", "FluentSim\FluentSim.csproj", "{0855EC3E-6187-4CD5-97C2-7E3EE928D665}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentSimTests", "FluentSimTests\FluentSimTests.csproj", "{D01BCCC1-F3D8-4B65-AA1C-9863A093478C}"
 EndProject
@@ -24,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C84ADA9A-6FD2-4E60-956A-CF5DC8322816}
 	EndGlobalSection
 EndGlobal
