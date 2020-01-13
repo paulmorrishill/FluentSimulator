@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -401,7 +402,7 @@ namespace FluentSimTests
     }
 
     [Test]
-    public async Task CanMakeGetRequestWithQueryString()
+    public void CanMakeGetRequestWithQueryString()
     {
       var queryString = "/test?key=value";
       Sim.Get("/test").WithParameter("key", "value").Responds("OK");
@@ -410,7 +411,7 @@ namespace FluentSimTests
     }
 
     [Test]
-    public async Task CanMakeGetRequestWithMultipleQueryStringsOutOfOrder()
+    public void CanMakeGetRequestWithMultipleQueryStringsOutOfOrder()
     {
       var queryString = "/test?key=value&key1=value1&key2=value2";
       Sim.Get("/test")
@@ -423,7 +424,7 @@ namespace FluentSimTests
     }
 
     [Test]
-    public async Task GivenTheQueryStringIsLongerThanWhatWasExpected_Fails()
+    public void GivenTheQueryStringIsLongerThanWhatWasExpected_Fails()
     {
       var queryString = "/test?key=value&key1=value1&key2=value2";
       Sim.Get("/test")
@@ -435,7 +436,7 @@ namespace FluentSimTests
     }
 
     [Test]
-    public async Task GivenTheExpectedParametersAreLongerThanTheQueryString_Fails()
+    public void GivenTheExpectedParametersAreLongerThanTheQueryString_Fails()
     {
       var queryString = "/test?key=value";
       Sim.Get("/test")
@@ -451,7 +452,7 @@ namespace FluentSimTests
     [TestCase("value%20here", "value here")]
     [TestCase("value+here", "value here")]
     [TestCase("Some%25%5E%26*(value", "Some%^&*(value")]
-    public async Task GivenTheQueryParamsHaveUrlEncodedCharactersItComparesOnUrlDecodedValues(string encoded, string decoded)
+    public void GivenTheQueryParamsHaveUrlEncodedCharactersItComparesOnUrlDecodedValues(string encoded, string decoded)
     {
       var queryString = "/test?key=" + encoded;
       Sim.Get("/test")
@@ -460,7 +461,6 @@ namespace FluentSimTests
       var result = MakeGetRequest(queryString);
       result.StatusCode.ShouldEqual(HttpStatusCode.OK);
     }
-
 
     private class AllFieldsReplacementConverter : JsonConverter
     {

@@ -15,12 +15,14 @@ namespace FluentSim
         private string Address;
         private List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
         private HttpListener HttpListener;
-        private List<Exception> ListenerExceptions = new List<Exception>();
+        private readonly List<Exception> ListenerExceptions = new List<Exception>();
+        public object ListenerExceptionsLock = new object();
+
         private JsonSerializerSettings JsonSerializer;
         public List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
         public IReadOnlyList<ReceivedRequest> ReceivedRequests => IncomingRequests.AsReadOnly();
         private bool CorsEnabled { get; set; }
-
+        
         public FluentSimulator(string address)
         {
             Address = address;
@@ -32,7 +34,6 @@ namespace FluentSim
             Address = address;
             JsonSerializer = serializer;
         }
-
 
         public void Start()
         {
@@ -50,7 +51,8 @@ namespace FluentSim
             }
             catch (Exception e)
             {
-                ListenerExceptions.Add(e);
+                lock (ListenerExceptionsLock)
+                    ListenerExceptions.Add(e);
             }
         }
 
@@ -149,8 +151,9 @@ namespace FluentSim
 
         public void Stop()
         {
-            if (ListenerExceptions.Any())
-                throw new SimulatorException(ListenerExceptions);
+            lock(ListenerExceptionsLock)
+                if (ListenerExceptions.Any())
+                    throw new SimulatorException(ListenerExceptions);
             HttpListener.Stop();
         }
 
@@ -184,11 +187,9 @@ namespace FluentSim
             return InitialiseRoute(routePath, HttpVerb.Put);
         }
 
-
         public void EnableCors()
         {
             CorsEnabled = true;
         }
-
     }
 }
