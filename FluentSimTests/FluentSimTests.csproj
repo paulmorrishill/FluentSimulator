@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FluentSim\FluentSim.csproj" />
+    <ProjectReference Include="..\FluentSim\FluentSimulator.csproj" />
   </ItemGroup>
 
 </Project>

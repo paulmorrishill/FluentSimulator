@@ -97,7 +97,8 @@ configuration: Release
 build:
   parallel: true                  # enable MSBuild parallel builds
   project: FluentSim.sln          # path to Visual Studio solution or project
-  publish_nuget: false             # package projects with .nuspec files and push to artifacts
+  publish_nuget: true             # package projects with .nuspec files and push to artifacts
+  publish_nuget_symbols: true     # generate and publish NuGet symbol packages
 
   # MSBuild verbosity level
   verbosity: normal
@@ -119,9 +120,6 @@ test:
 
 before_build:
     nuget restore
-
-after_build:
-    nuget pack FluentSim\FluentSim.nuspec
 
 #---------------------------------#
 #     deployment configuration    #
