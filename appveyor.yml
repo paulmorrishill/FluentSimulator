@@ -62,7 +62,7 @@ cache:
 # enable patching of AssemblyInfo.* files
 dotnet_csproj:
   patch: true
-  file: '**\FluentSim.csproj'
+  file: '**\FluentSimulator.csproj'
   version: '{version}'
 
 
