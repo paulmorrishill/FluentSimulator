@@ -93,7 +93,7 @@ namespace FluentSim
             byte[] buffer = matchingRoute.BinaryOutput;
 
             if(buffer == null)
-                buffer = Encoding.UTF8.GetBytes(matchingRoute.GetBody());
+                buffer = Encoding.UTF8.GetBytes(matchingRoute.GetBody(receivedRequest));
 
             response.ContentLength64 = buffer.Length;
             var output = response.OutputStream;

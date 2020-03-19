@@ -454,7 +454,28 @@ namespace FluentSimTests
       var result = MakeGetRequest(queryString);
       result.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
-
+    
+    [Test]
+    public void CanUseLambdaFunctionToRespondAtRuntime()
+    {
+      var counter = 0;
+      Sim.Post("/post").IsHandledBy(r => $"Counter: {counter++}");
+      
+      var resp1 = MakePostRequest("/post", "BODY");
+      var resp2 = MakePostRequest("/post", "BODY");
+      resp1.Content.ShouldBe("Counter: 0");
+      resp2.Content.ShouldBe("Counter: 1");
+    }
+    
+    [Test]
+    public void LambdaHandlerReceivesCorrectRequestInfo()
+    {
+      var counter = 0;
+      Sim.Post("/post").IsHandledBy(r => $"Req: {r.RequestBody}");
+      
+      var resp1 = MakePostRequest("/post", "BODY");
+      resp1.Content.ShouldBe("Req: BODY");
+    }
 
     private class AllFieldsReplacementConverter : JsonConverter
     {

@@ -5,6 +5,7 @@ namespace FluentSim
 {
     public interface RouteConfigurer
     {
+        RouteConfigurer IsHandledBy(Func<ReceivedRequest, string> generateOutput);
         RouteConfigurer Responds<T>(T output);
         RouteConfigurer Responds(byte[] output);
         RouteConfigurer Responds();

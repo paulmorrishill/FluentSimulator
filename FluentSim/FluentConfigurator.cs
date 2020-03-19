@@ -20,6 +20,7 @@ namespace FluentSim
         private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
         public byte[] BinaryOutput = null;
         public Dictionary<string, string> QueryParameters = new Dictionary<string, string>();
+        private Func<ReceivedRequest, string> HandlerFunction { get; set; }
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
@@ -35,6 +36,13 @@ namespace FluentSim
         {
             ReceivedRequests.Add(request);
         }
+
+        public RouteConfigurer IsHandledBy(Func<ReceivedRequest, string> generateOutput)
+        {
+            HandlerFunction = generateOutput;
+            return this;
+        }
+
 
         public RouteConfigurer Responds<T>(T output)
         {
@@ -96,8 +104,10 @@ namespace FluentSim
             return this;
         }
 
-        internal string GetBody()
+        internal string GetBody(ReceivedRequest request)
         {
+            if (HandlerFunction != null)
+                return HandlerFunction(request);
             return Output;
         }
 
