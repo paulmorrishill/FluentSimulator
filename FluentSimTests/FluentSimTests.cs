@@ -176,8 +176,12 @@ namespace FluentSimTests
     {
       Sim.Post("/test").Responds().WithHeader("ThisHeader", "ThisValue");
       var resp = MakePostRequest("/test", "");
-      resp.Headers[1].Name.ShouldBe("ThisHeader");
-      resp.Headers[1].Value.ShouldBe("ThisValue");
+
+      // the response will contain a few default headers,
+      // make sure it contains the custom header from above, too
+      var customHeader = resp.Headers.Single(header => header.Name.Equals("ThisHeader"));
+      Assert.NotNull(customHeader);
+      Assert.AreEqual("ThisValue", customHeader.Value);
     }
 
     [Test]
