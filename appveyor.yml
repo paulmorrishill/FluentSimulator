@@ -105,7 +105,7 @@ install:
 build_script:
   - cmd: dotnet build
   
-before_build:
+after_build:
   - cmd: dotnet pack --configuration Release --no-build --output ./artifacts
 
 artifacts:
