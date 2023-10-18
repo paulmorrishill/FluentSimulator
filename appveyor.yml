@@ -104,7 +104,13 @@ install:
 # 8. BUILD
 build_script:
   - cmd: dotnet build
+  
+before_build:
+  - cmd: dotnet pack --configuration Release --no-build --output ./artifacts
 
+artifacts:
+  - path: ./artifacts/*.nupkg
+    name: NuGet
 #---------------------------------#
 #       tests configuration       #
 #---------------------------------#
@@ -113,7 +119,7 @@ build_script:
 test:
   assemblies:
     only:
-      - FluentSimTests\bin\Release\FluentSimTests.dll
+      - FluentSimTests\bin\Debug\netcoreapp3.1\FluentSimTests.dll
 
 
 #---------------------------------#
