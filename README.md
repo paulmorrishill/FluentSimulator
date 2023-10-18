@@ -139,6 +139,51 @@ You can tell the API to abort the connection (interally uses `HttpListenerRespon
 simulator.Post("/authenticate").ImmediatelyAborts();
 ```
 
+## Response sequences
+Sometimes you need to test that your code is able to gracefully handle a sequence of bad responses and retry successfully.
+Routes can be configured to return a sequence of different responses.
+    
+```c#
+var route = simulator.Get("/employee/1")
+                    .Responds("John Smith")
+                    .ThenResponds("Jane Doe")
+                    .ThenResponds("Bob Jones");
+```
+
+```c#
+var route = simulator.Get("/employee/1")
+                    .Responds().WithCode(500)
+                    .ThenResponds().WithCode(429)
+                    .ThenResponds().WithCode(429)
+                    .ThenResponds().WithCode(200);
+```
+
+During your tests you can reset the response index if you need to by calling `ResetCurrentResponseIndex()` on the returned route from the `ThenResponds` call.
+
+```c#
+var route = Sim.Post("/test")
+        .Responds("first")
+        .ThenResponds("second");
+      
+      MakePostRequest("/test").Content.ShouldEqual("first");
+      route.ResetCurrentResponseIndex();
+      // This would have returned "second" if we hadn't reset the index
+      MakePostRequest("/test").Content.ShouldEqual("first");
+```
+
+At the end of the sequence the last response will be used for any future requests.
+
+```c#
+var route = Sim.Post("/test")
+        .Responds("first")
+        .ThenResponds("second");
+      
+ // First call returns "first"
+ // Second call returns "second"
+ // Third call returns "second" ... and so on
+      
+```
+
 ## Indefinitely suspend responses at runtime
 You can check that your webpage correctly displays loading messages or spinners.
 

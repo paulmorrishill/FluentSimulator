@@ -182,6 +182,58 @@ namespace FluentSimTests
     }
 
     [Test]
+    public void CanCreateASequenceOfResponses()
+    {
+      Sim.Post("/test")
+        .Responds().WithCode(400)
+        .ThenResponds()
+        .WithCode(500)
+        .ThenResponds()
+        .WithCode(200);
+      
+      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.BadRequest);
+      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
+      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.OK);
+    }
+
+    [Test]
+    public void GivenASequenceOfEventsItReusesTheLastResponse()
+    {
+      Sim.Post("/test")
+        .Responds().WithCode(400)
+        .ThenResponds()
+        .WithCode(500);
+      
+      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.BadRequest);
+      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
+      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
+      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
+    }
+
+    [Test]
+    public void CanOutputASequenceOfDifferentBodies()
+    {
+      Sim.Post("/test")
+        .Responds("first")
+        .ThenResponds("second");
+      
+      MakePostRequest("/test", "").Content.ShouldEqual("first");
+      MakePostRequest("/test", "").Content.ShouldEqual("second");
+    }
+    
+    [Test]
+    public void CanResetRouteSequenceCount()
+    {
+      var route = Sim.Post("/test")
+        .Responds("first")
+        .ThenResponds("second");
+      
+      MakePostRequest("/test", "").Content.ShouldEqual("first");
+      route.ResetCurrentResponseIndex();
+      MakePostRequest("/test", "").Content.ShouldEqual("first");
+    }
+    
+    [Test]
     public void CanRespondWithHeaders()
     {
       Sim.Post("/test").Responds().WithHeader("ThisHeader", "ThisValue");
@@ -203,7 +255,6 @@ namespace FluentSimTests
     [Test]
     public void CanImmediatelyAbortConnection()
     {
-      
       Sim.Get("/test").ImmediatelyAborts();
       var resp = MakeGetRequest("/test", 100);
       resp.StatusCode.ShouldEqual((HttpStatusCode)0);

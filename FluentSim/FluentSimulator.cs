@@ -86,8 +86,9 @@ namespace FluentSim
                 BeginGetContext();
                 return;
             }
+            var definedResponse = matchingRoute.GetNextDefinedResponse();
 
-            if (matchingRoute.ShouldImmediatelyDisconnect)
+            if (definedResponse.ShouldImmediatelyDisconnect)
             {
                 response.Abort();
                 return;
@@ -96,12 +97,12 @@ namespace FluentSim
             matchingRoute.AddReceivedRequest(receivedRequest);
             matchingRoute.WaitUntilReadyToRespond();
 
-            matchingRoute.RunContextModifiers(context);
+            definedResponse.RunContextModifiers(context);
 
-            byte[] buffer = matchingRoute.BinaryOutput;
+            byte[] buffer = definedResponse.BinaryOutput;
 
             if(buffer == null)
-                buffer = Encoding.UTF8.GetBytes(matchingRoute.GetBody());
+                buffer = Encoding.UTF8.GetBytes(definedResponse.GetBody());
 
             response.ContentLength64 = buffer.Length;
             var output = response.OutputStream;

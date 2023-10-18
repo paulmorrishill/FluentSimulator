@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -8,25 +9,50 @@ using Newtonsoft.Json;
 
 namespace FluentSim
 {
-    public class FluentConfigurator : RouteConfigurer
+    [DebuggerDisplay("{Description}")]
+    public class DefinedResponse
     {
-        private string Output = "";
+        public string Output = "";
+        private string Description { get; set; }
+        public void AddDescriptionPart(string part) => Description += " " + part;
+        public byte[] BinaryOutput = null;
+        public bool ShouldImmediatelyDisconnect = false;
+        public List<Action<HttpListenerContext>> ResponseModifiers = new List<Action<HttpListenerContext>>();
+        
+        internal string GetBody()
+        {
+            return Output;
+        }
+        
+        internal void RunContextModifiers(HttpListenerContext context)
+        {
+            foreach (var responseModifier in ResponseModifiers)
+                responseModifier(context);
+        }
+    }
+    
+    public class FluentConfigurator : RouteConfigurer, RouteSequenceConfigurer
+    {
         private string Path;
         private HttpVerb HttpVerb;
         private ManualResetEventSlim RespondToRequests = new ManualResetEventSlim(true);
         private TimeSpan RouteDelay;
-        private List<Action<HttpListenerContext>> ResponseModifiers = new List<Action<HttpListenerContext>>();
         private JsonSerializerSettings JsonSerializerSettings;
         private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
-        public byte[] BinaryOutput = null;
         public Dictionary<string, string> QueryParameters = new Dictionary<string, string>();
-        public bool ShouldImmediatelyDisconnect = false;
+        private DefinedResponse CurrentResponse = new DefinedResponse();
+        private int NextResponseIndex = 0;
+        private List<DefinedResponse> Responses;
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
             JsonSerializerSettings = jsonConverter;
             HttpVerb = get;
             Path = path;
+            Responses = new List<DefinedResponse>
+            {
+                CurrentResponse
+            };
         }
 
         public HttpMethod Method { get; set; }
@@ -39,25 +65,28 @@ namespace FluentSim
 
         public RouteConfigurer Responds<T>(T output)
         {
-            Output = JsonConvert.SerializeObject(output, JsonSerializerSettings);
+            CurrentResponse.Output = JsonConvert.SerializeObject(output, JsonSerializerSettings);
             return this;
         }
 
         public RouteConfigurer Responds(byte[] output)
         {
-            BinaryOutput = output;
+            CurrentResponse.AddDescriptionPart("With binary output");
+            CurrentResponse.BinaryOutput = output;
             return this;
         }
 
         public RouteConfigurer WithCode(int code)
         {
-            ResponseModifiers.Add(ctx => ctx.Response.StatusCode = code);
+            CurrentResponse.AddDescriptionPart("With code " + code);
+            CurrentResponse.ResponseModifiers.Add(ctx => ctx.Response.StatusCode = code);
             return this;
         }
 
         public RouteConfigurer WithHeader(string headerName, string headerValue)
         {
-            ResponseModifiers.Add(ctx => ctx.Response.AddHeader(headerName, headerValue));
+            CurrentResponse.AddDescriptionPart("With header " + headerName + " = " + headerValue);
+            CurrentResponse.ResponseModifiers.Add(ctx => ctx.Response.AddHeader(headerName, headerValue));
             return this;
         }
 
@@ -87,7 +116,7 @@ namespace FluentSim
 
         public RouteConfigurer Responds(string output)
         {
-            Output = output;
+            CurrentResponse.Output = output;
             return this;
         }
 
@@ -95,11 +124,6 @@ namespace FluentSim
         {
             IsRegex = true;
             return this;
-        }
-
-        internal string GetBody()
-        {
-            return Output;
         }
 
         internal bool DoesRouteMatch(HttpListenerRequest contextRequest)
@@ -139,12 +163,6 @@ namespace FluentSim
             RespondToRequests.Wait();
         }
 
-        internal void RunContextModifiers(HttpListenerContext context)
-        {
-            foreach (var responseModifier in ResponseModifiers)
-                responseModifier(context);
-        }
-
         public RouteConfigurer Responds()
         {
             return this;
@@ -152,7 +170,8 @@ namespace FluentSim
 
         public RouteConfigurer WithCookie(Cookie cookie)
         {
-            ResponseModifiers.Add(ctx => ctx.Response.SetCookie(cookie));
+            CurrentResponse.AddDescriptionPart("With cookie " + cookie.Name + " = " + cookie.Value);
+            CurrentResponse.ResponseModifiers.Add(ctx => ctx.Response.SetCookie(cookie));
             return this;
         }
 
@@ -161,9 +180,32 @@ namespace FluentSim
             return new RouteHistory(ReceivedRequests.AsReadOnly());
         }
 
-        public void ImmediatelyAborts()
+        public RouteConfigurer ImmediatelyAborts()
         {
-            ShouldImmediatelyDisconnect = true;
+            CurrentResponse.ShouldImmediatelyDisconnect = true;
+            return this;
+        }
+
+        public void ResetCurrentResponseIndex()
+        {
+            NextResponseIndex = 0;
+        }
+
+        public RouteSequenceConfigurer ThenResponds(string bodyText)
+        {
+            CurrentResponse = new DefinedResponse
+            {
+                Output = bodyText
+            };
+            Responses.Add(CurrentResponse);
+            return this;
+        }
+
+
+        public RouteSequenceConfigurer ThenResponds()
+        {
+            ThenResponds("");
+            return this;
         }
 
         private class RouteHistory : IRouteHistory
@@ -173,6 +215,15 @@ namespace FluentSim
                 ReceivedRequests = requests;
             }
             public IReadOnlyList<ReceivedRequest> ReceivedRequests { get; }
+        }
+
+        public DefinedResponse GetNextDefinedResponse()
+        {
+            if(NextResponseIndex >= Responses.Count)
+                return Responses[Responses.Count - 1];
+            var resp = Responses[NextResponseIndex];
+            NextResponseIndex++;
+            return resp;
         }
     }
 

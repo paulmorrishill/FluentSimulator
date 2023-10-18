@@ -18,6 +18,13 @@ namespace FluentSim
         RouteConfigurer Resume();
         RouteConfigurer WithCookie(Cookie cookie);
         IRouteHistory History();
-        void ImmediatelyAborts();
+        RouteConfigurer ImmediatelyAborts();
+        RouteSequenceConfigurer ThenResponds(string bodyText);
+        RouteSequenceConfigurer ThenResponds();
+    }
+
+    public interface RouteSequenceConfigurer : RouteConfigurer
+    {
+        void ResetCurrentResponseIndex();
     }
 }
