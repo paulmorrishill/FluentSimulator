@@ -18,5 +18,6 @@ namespace FluentSim
         RouteConfigurer Resume();
         RouteConfigurer WithCookie(Cookie cookie);
         IRouteHistory History();
+        void ImmediatelyAborts();
     }
 }

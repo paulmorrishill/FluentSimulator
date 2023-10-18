@@ -20,6 +20,7 @@ namespace FluentSim
         private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
         public byte[] BinaryOutput = null;
         public Dictionary<string, string> QueryParameters = new Dictionary<string, string>();
+        public bool ShouldImmediatelyDisconnect = false;
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
@@ -158,6 +159,11 @@ namespace FluentSim
         public IRouteHistory History()
         {
             return new RouteHistory(ReceivedRequests.AsReadOnly());
+        }
+
+        public void ImmediatelyAborts()
+        {
+            ShouldImmediatelyDisconnect = true;
         }
 
         private class RouteHistory : IRouteHistory

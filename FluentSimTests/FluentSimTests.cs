@@ -49,10 +49,13 @@ namespace FluentSimTests
       resp.StatusCode.ShouldEqual(HttpStatusCode.OK);
     }
 
-    private static IRestResponse MakeGetRequest(string path)
+    private static IRestResponse MakeGetRequest(string path, int timeout=50000)
     {
       var request = new RestRequest(path, Method.GET);
-      var client = new RestClient(BaseAddress);
+      var client = new RestClient(BaseAddress)
+      {
+        Timeout = timeout
+      };
       var resp = client.Execute(request);
       return resp;
     }
@@ -195,6 +198,15 @@ namespace FluentSimTests
       var cookie = resp.Cookies[0];
       cookie.Name.ShouldEqual("name");
       cookie.Value.ShouldEqual("VALTEST");
+    }
+
+    [Test]
+    public void CanImmediatelyAbortConnection()
+    {
+      
+      Sim.Get("/test").ImmediatelyAborts();
+      var resp = MakeGetRequest("/test", 100);
+      resp.StatusCode.ShouldEqual((HttpStatusCode)0);
     }
 
     [Test]

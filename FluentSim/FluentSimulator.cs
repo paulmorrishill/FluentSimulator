@@ -87,6 +87,12 @@ namespace FluentSim
                 return;
             }
 
+            if (matchingRoute.ShouldImmediatelyDisconnect)
+            {
+                response.Abort();
+                return;
+            }
+
             matchingRoute.AddReceivedRequest(receivedRequest);
             matchingRoute.WaitUntilReadyToRespond();
 

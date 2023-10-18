@@ -133,6 +133,12 @@ You can test how your code handles slow server replies.
     simulator.Get("/my/route").Responds("Final output").Delay(TimeSpan.FromSeconds(30));
 ```
 
+## Aborted connections
+You can tell the API to abort the connection (interally uses `HttpListenerResponse.Abort()`) to simulate a network disconnection. Note: if using restsharp this will cause a response timeout, so if you have a long timeout set it may appear to hang. The RestSharp status code will be `0`.
+```c#
+simulator.Post("/authenticate").ImmediatelyAborts();
+```
+
 ## Indefinitely suspend responses at runtime
 You can check that your webpage correctly displays loading messages or spinners.
 
