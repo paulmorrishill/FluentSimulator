@@ -30,8 +30,6 @@ max_jobs: 1
 
 # Build worker image (VM template)
 image: Visual Studio 2022
-environment:
-  MSBUILD_PATH: "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
 
 # scripts that are called at very beginning, before repo cloning
 init:
@@ -96,14 +94,16 @@ configuration: Release
 #  - Debug
 #  - Release
 
-build:
-  parallel: true                  # enable MSBuild parallel builds
-  project: FluentSim.sln          # path to Visual Studio solution or project
-  publish_nuget: true             # package projects with .nuspec files and push to artifacts
-  publish_nuget_symbols: true     # generate and publish NuGet symbol packages
+install:
+  - cmd: dotnet restore --verbosity minimal
 
-  # MSBuild verbosity level
-  verbosity: normal
+# 5. AppVeyor patches AssemblyInfo and csproj files
+# 6. AppVeyor modifies hosts files
+# 7. AppVeyor "starts services"
+
+# 8. BUILD
+build_script:
+  - cmd: dotnet build
 
 #---------------------------------#
 #       tests configuration       #
@@ -115,13 +115,6 @@ test:
     only:
       - FluentSimTests\bin\Release\FluentSimTests.dll
 
-#---------------------------------#
-#      artifacts configuration    #
-#---------------------------------#
-
-
-before_build:
-    nuget restore
 
 #---------------------------------#
 #     deployment configuration    #
