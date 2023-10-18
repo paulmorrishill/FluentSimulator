@@ -186,9 +186,9 @@ namespace FluentSimTests
         .ThenResponds()
         .WithCode(200);
       
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.BadRequest);
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.OK);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Test]
@@ -199,10 +199,10 @@ namespace FluentSimTests
         .ThenResponds()
         .WithCode(500);
       
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.BadRequest);
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.InternalServerError);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
     }
 
     [Test]
@@ -212,8 +212,8 @@ namespace FluentSimTests
         .Responds("first")
         .ThenResponds("second");
       
-      MakePostRequest("/test", "").Content.ShouldEqual("first");
-      MakePostRequest("/test", "").Content.ShouldEqual("second");
+      MakePostRequest("/test", "").Content.ShouldBe("first");
+      MakePostRequest("/test", "").Content.ShouldBe("second");
     }
     
     [Test]
@@ -223,9 +223,9 @@ namespace FluentSimTests
         .Responds("first")
         .ThenResponds("second");
       
-      MakePostRequest("/test", "").Content.ShouldEqual("first");
+      MakePostRequest("/test", "").Content.ShouldBe("first");
       route.ResetCurrentResponseIndex();
-      MakePostRequest("/test", "").Content.ShouldEqual("first");
+      MakePostRequest("/test", "").Content.ShouldBe("first");
     }
     
     [Test]
@@ -256,7 +256,7 @@ namespace FluentSimTests
     {
       Sim.Get("/test").ImmediatelyAborts();
       var resp = MakeGetRequest("/test", 100);
-      resp.StatusCode.ShouldEqual((HttpStatusCode)0);
+      resp.StatusCode.ShouldBe((HttpStatusCode)0);
     }
 
     [Test]

@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 namespace FluentSim
 {
     [DebuggerDisplay("{Description}")]
-    public class DefinedResponse
+    internal class DefinedResponse
     {
         public string Output = "";
         private string Description { get; set; }
@@ -18,9 +18,12 @@ namespace FluentSim
         public byte[] BinaryOutput = null;
         public bool ShouldImmediatelyDisconnect = false;
         public List<Action<HttpListenerContext>> ResponseModifiers = new List<Action<HttpListenerContext>>();
-        
-        internal string GetBody()
+        public Func<ReceivedRequest, string> HandlerFunction { get; set; }
+
+        internal string GetBody(ReceivedRequest request)
         {
+            if (HandlerFunction != null)
+                return HandlerFunction(request);
             return Output;
         }
         
@@ -43,7 +46,6 @@ namespace FluentSim
         private DefinedResponse CurrentResponse = new DefinedResponse();
         private int NextResponseIndex = 0;
         private List<DefinedResponse> Responses;
-        private Func<ReceivedRequest, string> HandlerFunction { get; set; }
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
@@ -66,7 +68,8 @@ namespace FluentSim
 
         public RouteConfigurer IsHandledBy(Func<ReceivedRequest, string> generateOutput)
         {
-            HandlerFunction = generateOutput;
+            CurrentResponse.AddDescriptionPart("Handled by function");
+            CurrentResponse.HandlerFunction = generateOutput;
             return this;
         }
 
@@ -132,13 +135,6 @@ namespace FluentSim
         {
             IsRegex = true;
             return this;
-        }
-
-        internal string GetBody(ReceivedRequest request)
-        {
-            if (HandlerFunction != null)
-                return HandlerFunction(request);
-            return Output;
         }
 
         internal bool DoesRouteMatch(HttpListenerRequest contextRequest)
@@ -232,7 +228,7 @@ namespace FluentSim
             public IReadOnlyList<ReceivedRequest> ReceivedRequests { get; }
         }
 
-        public DefinedResponse GetNextDefinedResponse()
+        internal DefinedResponse GetNextDefinedResponse()
         {
             if(NextResponseIndex >= Responses.Count)
                 return Responses[Responses.Count - 1];

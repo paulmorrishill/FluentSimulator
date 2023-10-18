@@ -126,6 +126,21 @@ simulator.Post("/authenticate")
          .WithCookie(new Cookie("Token", "ABCDEF"));
 ```
 
+## Dynamic handlers
+You can also use a dynamic handler to generate the response. This is useful for calculating responses based on the request data.
+
+```c#
+var counter = 0;
+// Request is of type ReceivedRequest see below for more info
+Sim.Post("/post").IsHandledBy(request => $"Counter: {counter++}");
+
+var resp1 = MakePostRequest("/post", "BODY");
+var resp2 = MakePostRequest("/post", "BODY");
+resp1.Content.ShouldBe("Counter: 0");
+resp2.Content.ShouldBe("Counter: 1");
+```
+
+
 ## Slow responses
 You can test how your code handles slow server replies.
 
