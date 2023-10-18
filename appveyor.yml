@@ -117,7 +117,7 @@ test:
   off
 
 test_script:
-  - cmd: dotnet test --configuration Release --logger:"nunit;LogFilePath=TestResults.xml"
+  - cmd: nunit3-console FluentSimTests\bin\Release\netcoreapp3.1\FluentSimTests.dll --result=myresults.xml;format=AppVeyor
 
 #---------------------------------#
 #     deployment configuration    #
