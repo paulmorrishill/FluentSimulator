@@ -6,8 +6,8 @@ There are 2 main use cases for FluentSimulator.
 - Simulating a 3rd party API to unit test your code that interacts with that API
 - Mocking out REST or other APIs during automated browser based testing using something like selenium - useful for light weight single page application testing.
 
-[![Build status](https://ci.appveyor.com/api/projects/status/wi118asgtpeqg2ed?svg=true)](https://ci.appveyor.com/project/paulmorrishill/fluentsimulator)
-[![AppVeyor tests](https://img.shields.io/appveyor/tests/paulmorrishill/fluentsimulator.svg)](https://ci.appveyor.com/project/paulmorrishill/fluentsimulator/build/tests)
+[![Build status](https://ci.appveyor.com/api/projects/status/h1v3d192xhesks29?svg=true)](https://ci.appveyor.com/project/paulmorrishill/fluentsimulator)
+[![AppVeyor tests](https://img.shields.io/appveyor/tests/paulmorrishill/fluentsimulator)](https://ci.appveyor.com/project/paulmorrishill/fluentsimulator/build/tests)
 [![NuGet](https://img.shields.io/nuget/v/FluentSimulator.svg)](https://www.nuget.org/packages/FluentSimulator/)
 
 # Usage
