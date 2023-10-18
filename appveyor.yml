@@ -134,7 +134,7 @@ deploy:
   - provider: NuGet
   #  server: https://my.nuget.server/feed
     api_key:
-      secure: HMp6b4NigywSudx9+nVIr2gZaQWUdiOkUQE3jKQ7ung0Pwb/5Qcy8KA1HeZXywGw
+      secure: 6Uz3WIjGF2kUkhagOqLHNhIAtdfDWn3xkIj8ahMIbw495DBXJBkD5Uv41HgMdu5T
   #  skip_symbols: false
   #  symbol_server: https://your.symbol.server/feed
   # Deploy to GitHub Releases
