@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -11,12 +9,9 @@ using System.Threading.Tasks;
 using FluentSim;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using NSubstitute;
 using NUnit.Framework;
 using RestSharp;
-using RestSharp.Serializers;
-using Should;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
+using Shouldly;
 
 namespace FluentSimTests
 {
@@ -45,8 +40,8 @@ namespace FluentSimTests
         .Responds("TEST");
 
       var resp = MakeGetRequest("/test");
-      resp.Content.ShouldEqual("TEST");
-      resp.StatusCode.ShouldEqual(HttpStatusCode.OK);
+      resp.Content.ShouldBe("TEST");
+      resp.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     private static IRestResponse MakeGetRequest(string path, int timeout=50000)
@@ -87,14 +82,14 @@ namespace FluentSimTests
       Sim.Get("/test1").Responds("output1");
       Sim.Get("/test2").Responds("output2");
 
-      MakeGetRequest("/test1").Content.ShouldEqual("output1");
-      MakeGetRequest("/test2").Content.ShouldEqual("output2");
+      MakeGetRequest("/test1").Content.ShouldBe("output1");
+      MakeGetRequest("/test2").Content.ShouldBe("output2");
     }
 
     [Test]
     public void RequestingAUrlThatDoesNotExistReturns501()
     {
-      MakeGetRequest("/testUrl").StatusCode.ShouldEqual(HttpStatusCode.NotImplemented);
+      MakeGetRequest("/testUrl").StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
     }
 
     [Test]
@@ -102,42 +97,42 @@ namespace FluentSimTests
     {
       Sim.Get("/test").Responds("out");
       MakeGetRequest("/nonexistent");
-      MakeGetRequest("/test").Content.ShouldEqual("out");
+      MakeGetRequest("/test").Content.ShouldBe("out");
     }
 
     [Test]
     public void WhenARouteEndsInASlashTheUrlIsRecognised()
     {
       Sim.Get("/test").Responds("out");
-      MakeGetRequest("/test/").Content.ShouldEqual("out");
+      MakeGetRequest("/test/").Content.ShouldBe("out");
     }
 
     [Test]
     public void WhenTheTargetEndsInSometingDifferentItDoesNotMatchTheConfiguredRoute()
     {
       Sim.Get("/test").Responds("out");
-      MakeGetRequest("/test/somethingelse").StatusCode.ShouldEqual(HttpStatusCode.NotImplemented);
+      MakeGetRequest("/test/somethingelse").StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
     }
 
     [Test]
     public void WhenTargetStartsWithSometingDifferentItDoesNotMatch()
     {
       Sim.Get("/test").Responds("out");
-      MakeGetRequest("something/test").StatusCode.ShouldEqual(HttpStatusCode.NotImplemented);
+      MakeGetRequest("something/test").StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
     }
 
     [Test]
     public void WhenTheRouteIsADifferentVerbItIsNotMatched()
     {
       Sim.Get("/test").Responds("outhere");
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.NotImplemented);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
     }
 
     [Test]
     public void CanMakePostRequest()
     {
       Sim.Post("/test").Responds("outhere");
-      MakePostRequest("/test", "").Content.ShouldEqual("outhere");
+      MakePostRequest("/test", "").Content.ShouldBe("outhere");
     }
 
     [Test]
@@ -148,7 +143,7 @@ namespace FluentSimTests
       var timer = new Stopwatch();
       timer.Start();
       ResumeTheRouteInHalfASecond(route);
-      MakeGetRequest("/path").Content.ShouldEqual("SOMEOUTPUT");
+      MakeGetRequest("/path").Content.ShouldBe("SOMEOUTPUT");
       timer.Stop();
       timer.ElapsedMilliseconds.ShouldBeGreaterThan(499);
     }
@@ -160,7 +155,7 @@ namespace FluentSimTests
         .Responds("delayed");
       var stopwatch = new Stopwatch();
       stopwatch.Start();
-      MakeGetRequest("/path").Content.ShouldEqual("delayed");
+      MakeGetRequest("/path").Content.ShouldBe("delayed");
       stopwatch.Stop();
       stopwatch.ElapsedMilliseconds.ShouldBeGreaterThan(500);
     }
@@ -178,7 +173,7 @@ namespace FluentSimTests
     public void CanRespondWithCodes()
     {
       Sim.Post("/test").Responds().WithCode(300);
-      MakePostRequest("/test", "").StatusCode.ShouldEqual(HttpStatusCode.Ambiguous);
+      MakePostRequest("/test", "").StatusCode.ShouldBe(HttpStatusCode.Ambiguous);
     }
 
     [Test]
@@ -238,8 +233,12 @@ namespace FluentSimTests
     {
       Sim.Post("/test").Responds().WithHeader("ThisHeader", "ThisValue");
       var resp = MakePostRequest("/test", "");
-      resp.Headers[0].Name.ShouldEqual("ThisHeader");
-      resp.Headers[0].Value.ShouldEqual("ThisValue");
+
+      // the response will contain a few default headers,
+      // make sure it contains the custom header from above, too
+      var customHeader = resp.Headers.Single(header => header.Name.Equals("ThisHeader"));
+      Assert.NotNull(customHeader);
+      Assert.AreEqual("ThisValue", customHeader.Value);
     }
 
     [Test]
@@ -248,8 +247,8 @@ namespace FluentSimTests
       Sim.Get("/test").Responds().WithCookie(new Cookie("name", "VALTEST"));
       var resp = MakeGetRequest("/test");
       var cookie = resp.Cookies[0];
-      cookie.Name.ShouldEqual("name");
-      cookie.Value.ShouldEqual("VALTEST");
+      cookie.Name.ShouldBe("name");
+      cookie.Value.ShouldBe("VALTEST");
     }
 
     [Test]
@@ -266,7 +265,7 @@ namespace FluentSimTests
       Sim.Post("/test")
         .Responds(new TestObject());
 
-      MakePostRequest("/test", "").Content.ShouldEqual(@"{""TestField"":""ThisValue""}");
+      MakePostRequest("/test", "").Content.ShouldBe(@"{""TestField"":""ThisValue""}");
     }
 
     [Test]
@@ -275,7 +274,7 @@ namespace FluentSimTests
       Sim.Post("/test")
         .Responds(new byte[] {1, 2, 3, 4});
 
-      MakeRawRequest("/test", Method.POST).RawBytes.ShouldEqual(new byte[] {1, 2, 3, 4});
+      MakeRawRequest("/test", Method.POST).RawBytes.ShouldBe(new byte[] {1, 2, 3, 4});
     }
 
     [Test]
@@ -291,14 +290,14 @@ namespace FluentSimTests
       Sim.Post("/test")
         .Responds(new TestEnumClass());
 
-      MakePostRequest("/test", "").Content.ShouldEqual(@"{""TestEnumField"":""V2""}");
+      MakePostRequest("/test", "").Content.ShouldBe(@"{""TestEnumField"":""V2""}");
     }
 
     [Test]
     public void CanMatchRequestCaseInsensitively()
     {
       Sim.Get("/test").Responds("out");
-      MakeGetRequest("/TEST").Content.ShouldEqual("out");
+      MakeGetRequest("/TEST").Content.ShouldBe("out");
     }
 
     [Test]
@@ -318,21 +317,21 @@ namespace FluentSimTests
     public void CanMakeRegexRequest()
     {
       Sim.Get("/test[0-9]").MatchingRegex().Responds("output1");
-      MakeGetRequest("/test1").Content.ShouldEqual("output1");
+      MakeGetRequest("/test1").Content.ShouldBe("output1");
     }
 
     [Test]
     public void CanMakeComplexRegexRequest()
     {
       Sim.Get(@"api\/.*\/read\/Business\/Business.*").MatchingRegex().Responds("Output");
-      MakeGetRequest("/api/02b9863e-cb07-c62d-50a9-8ecb40aa85b6/read/Business/Business/").Content.ShouldEqual("Output");
+      MakeGetRequest("/api/02b9863e-cb07-c62d-50a9-8ecb40aa85b6/read/Business/Business/").Content.ShouldBe("Output");
     }
 
     [Test]
     public void CanMatchRegexNotEndingInSlash()
     {
       Sim.Get("/test[0-9]").MatchingRegex().Responds("output1");
-      MakeGetRequest("/test1sdfsdfds").Content.ShouldEqual("output1");
+      MakeGetRequest("/test1sdfsdfds").Content.ShouldBe("output1");
     }
 
     private void MakeVerbRequest(RouteConfigurer configurer, Method verb)
@@ -340,12 +339,12 @@ namespace FluentSimTests
       if (verb == Method.HEAD)
       {
         configurer.Responds("");
-        MakeRequest("/test", verb).StatusCode.ShouldEqual(HttpStatusCode.OK);
+        MakeRequest("/test", verb).StatusCode.ShouldBe(HttpStatusCode.OK);
         return;
       }
 
       configurer.Responds(verb + "output");
-      MakeRequest("/test", verb).Content.ShouldEqual(verb + "output");
+      MakeRequest("/test", verb).Content.ShouldBe(verb + "output");
     }
 
     [Test]
@@ -355,10 +354,10 @@ namespace FluentSimTests
       MakePostRequest("/post", "BODY");
 
       var requests = Sim.ReceivedRequests;
-      requests.Count.ShouldEqual(1);
+      requests.Count.ShouldBe(1);
       var firstRequest = requests[0];
-      firstRequest.AcceptTypes.Length.ShouldEqual(6);
-      firstRequest.Url.AbsoluteUri.ShouldEqual("http://localhost:8019/post");
+      firstRequest.AcceptTypes.Length.ShouldBe(6);
+      firstRequest.Url.AbsoluteUri.ShouldBe("http://localhost:8019/post");
       firstRequest.UserAgent.ShouldStartWith("RestSharp");
     }
 
@@ -385,7 +384,7 @@ namespace FluentSimTests
 
       var requests = Sim.ReceivedRequests;
       var firstRequest = requests[0];
-      firstRequest.RequestBody.ShouldEqual("BODY");
+      firstRequest.RequestBody.ShouldBe("BODY");
     }
 
     [Test]
@@ -396,7 +395,7 @@ namespace FluentSimTests
 
       var requests = Sim.ReceivedRequests;
       var firstRequest = requests[0];
-      firstRequest.BodyAs<TestObject>().TestField.ShouldEqual("TESTHERE");
+      firstRequest.BodyAs<TestObject>().TestField.ShouldBe("TESTHERE");
     }
 
     [Test]
@@ -413,7 +412,7 @@ namespace FluentSimTests
 
       MakePostRequest("/test", @"{""TestField"":""original""}");
 
-      Sim.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldEqual("REPLACEMENT");
+      Sim.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldBe("REPLACEMENT");
     }
 
     [Test]
@@ -427,9 +426,9 @@ namespace FluentSimTests
 
     private static void AssertResponseContainsCorsHeaders(IRestResponse resp)
     {
-      resp.Headers.First(n => n.Name == "Access-Control-Allow-Origin").Value.ShouldEqual("*");
+      resp.Headers.First(n => n.Name == "Access-Control-Allow-Origin").Value.ShouldBe("*");
       resp.Headers.First(n => n.Name == "Access-Control-Allow-Headers").Value
-        .ShouldEqual("Authorization, Content-Type");
+        .ShouldBe("Authorization, Content-Type");
     }
 
     [Test]
@@ -440,7 +439,7 @@ namespace FluentSimTests
       var resp = MakeRequest("/test", Method.OPTIONS);
       AssertResponseContainsCorsHeaders(resp);
 
-      MakePostRequest("/test", new object()).Content.ShouldEqual("TEST OUTPUT");
+      MakePostRequest("/test", new object()).Content.ShouldBe("TEST OUTPUT");
     }
 
     [Test]
@@ -451,9 +450,9 @@ namespace FluentSimTests
       MakePostRequest("/test", @"{""TestField"":""original""}");
       MakeRequest("/test", Method.GET);
       MakeRequest("/test", Method.GET);
-      get.ReceivedRequests.Count.ShouldEqual(2);
-      post.ReceivedRequests.Count.ShouldEqual(1);
-      post.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldEqual("original");
+      get.ReceivedRequests.Count.ShouldBe(2);
+      post.ReceivedRequests.Count.ShouldBe(1);
+      post.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldBe("original");
     }
 
     [Test]
@@ -461,7 +460,7 @@ namespace FluentSimTests
     {
       Sim.Post("/post").Responds("OK");
       Sim.Post("/post").Responds("OK2");
-      MakePostRequest("/post", "").Content.ShouldEqual("OK2");
+      MakePostRequest("/post", "").Content.ShouldBe("OK2");
     }
 
     [Test]
@@ -470,7 +469,7 @@ namespace FluentSimTests
       var queryString = "/test?key=value";
       Sim.Get("/test").WithParameter("key", "value").Responds("OK");
       var result = MakeGetRequest(queryString);
-      result.Content.ShouldEqual("OK");
+      result.Content.ShouldBe("OK");
     }
 
     [Test]
@@ -483,7 +482,7 @@ namespace FluentSimTests
         .WithParameter("key1", "value1")
         .Responds("OK");
       var result = MakeGetRequest(queryString);
-      result.Content.ShouldEqual("OK");
+      result.Content.ShouldBe("OK");
     }
 
     [Test]
@@ -495,7 +494,7 @@ namespace FluentSimTests
         .WithParameter("key", "value")
         .Responds("OK");
       var result = MakeGetRequest(queryString);
-      result.StatusCode.ShouldEqual(HttpStatusCode.NotImplemented);
+      result.StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
     }
 
     [Test]
@@ -508,7 +507,7 @@ namespace FluentSimTests
         .WithParameter("key1", "value1")
         .Responds("OK");
       var result = MakeGetRequest(queryString);
-      result.StatusCode.ShouldEqual(HttpStatusCode.NotImplemented);
+      result.StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
     }
 
 
@@ -522,7 +521,29 @@ namespace FluentSimTests
         .WithParameter("key", decoded)
         .Responds("OK");
       var result = MakeGetRequest(queryString);
-      result.StatusCode.ShouldEqual(HttpStatusCode.OK);
+      result.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+    
+    [Test]
+    public void CanUseLambdaFunctionToRespondAtRuntime()
+    {
+      var counter = 0;
+      Sim.Post("/post").IsHandledBy(r => $"Counter: {counter++}");
+      
+      var resp1 = MakePostRequest("/post", "BODY");
+      var resp2 = MakePostRequest("/post", "BODY");
+      resp1.Content.ShouldBe("Counter: 0");
+      resp2.Content.ShouldBe("Counter: 1");
+    }
+    
+    [Test]
+    public void LambdaHandlerReceivesCorrectRequestInfo()
+    {
+      var counter = 0;
+      Sim.Post("/post").IsHandledBy(r => $"Req: {r.RequestBody}");
+      
+      var resp1 = MakePostRequest("/post", "BODY");
+      resp1.Content.ShouldBe("Req: BODY");
     }
 
     private class AllFieldsReplacementConverter : JsonConverter

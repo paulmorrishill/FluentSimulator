@@ -9,7 +9,7 @@
 #---------------------------------#
 
 # version format
-version: 1.0.{build}
+version: 2.0.{build}
 
 # you can use {branch} name in version format too
 # version: 1.0.{build}-{branch}
@@ -29,7 +29,7 @@ max_jobs: 1
 #---------------------------------#
 
 # Build worker image (VM template)
-image: Visual Studio 2015
+image: Visual Studio 2019
 
 # scripts that are called at very beginning, before repo cloning
 init:
@@ -56,18 +56,15 @@ matrix:
 # build cache to preserve files/folders between builds
 cache:
   - packages -> **\packages.config  # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
-  - projectA\libs
-  - node_modules                    # local npm modules
-  - '%LocalAppData%\NuGet\Cache'
+  - '%LocalAppData%\NuGet\v3-cache'
 
 
 # enable patching of AssemblyInfo.* files
-assembly_info:
+dotnet_csproj:
   patch: true
-  file: AssemblyInfo.*
-  assembly_version: "1.0.{build}"
-  assembly_file_version: "{version}"
-  assembly_informational_version: "{version}"
+  file: '**\FluentSimulator.csproj'
+  version: '{version}'
+
 
 
 # Automatically register private account and/or project AppVeyor NuGet feeds.
@@ -82,7 +79,7 @@ assembly_info:
 #---------------------------------#
 
 # build platform, i.e. x86, x64, Any CPU. This setting is optional.
-platform: Any CPU
+# platform: Any CPU
 
 # to add several platforms to build matrix:
 #platform:
@@ -139,7 +136,7 @@ deploy:
       secure: HMp6b4NigywSudx9+nVIr2gZaQWUdiOkUQE3jKQ7ung0Pwb/5Qcy8KA1HeZXywGw
   #  skip_symbols: false
   #  symbol_server: https://your.symbol.server/feed
-    # Deploy to GitHub Releases
+  # Deploy to GitHub Releases
   #- provider: GitHub
   #  artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
   #  draft: false

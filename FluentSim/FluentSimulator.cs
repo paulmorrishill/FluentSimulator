@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -102,7 +102,7 @@ namespace FluentSim
             byte[] buffer = definedResponse.BinaryOutput;
 
             if(buffer == null)
-                buffer = Encoding.UTF8.GetBytes(definedResponse.GetBody());
+                buffer = Encoding.UTF8.GetBytes(definedResponse.GetBody(receivedRequest));
 
             response.ContentLength64 = buffer.Length;
             var output = response.OutputStream;

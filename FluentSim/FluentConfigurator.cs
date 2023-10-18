@@ -43,6 +43,7 @@ namespace FluentSim
         private DefinedResponse CurrentResponse = new DefinedResponse();
         private int NextResponseIndex = 0;
         private List<DefinedResponse> Responses;
+        private Func<ReceivedRequest, string> HandlerFunction { get; set; }
 
         public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
         {
@@ -62,6 +63,13 @@ namespace FluentSim
         {
             ReceivedRequests.Add(request);
         }
+
+        public RouteConfigurer IsHandledBy(Func<ReceivedRequest, string> generateOutput)
+        {
+            HandlerFunction = generateOutput;
+            return this;
+        }
+
 
         public RouteConfigurer Responds<T>(T output)
         {
@@ -124,6 +132,13 @@ namespace FluentSim
         {
             IsRegex = true;
             return this;
+        }
+
+        internal string GetBody(ReceivedRequest request)
+        {
+            if (HandlerFunction != null)
+                return HandlerFunction(request);
+            return Output;
         }
 
         internal bool DoesRouteMatch(HttpListenerRequest contextRequest)
