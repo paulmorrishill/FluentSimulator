@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -55,23 +56,30 @@ namespace FluentSimTests
       return resp;
     }
 
-    private static IRestResponse MakePostRequest(string path, object body)
+    private static IRestResponse MakePostRequest(string path, object body, Dictionary<string, string> headers = null)
     {
       var verb = Method.POST;
-      return MakeRequest(path, verb, body);
+      return MakeRequest(path, verb, body, headers);
     }
 
-    private static IRestResponse MakeRequest(string path, Method verb, object body = null)
+    private static IRestResponse MakeRequest(string path, Method verb, object body = null, Dictionary<string, string> headers = null)
     {
-      var resp = MakeRawRequest(path, verb, body);
+      var resp = MakeRawRequest(path, verb, body, headers);
       return resp;
     }
 
-    private static IRestResponse MakeRawRequest(string path, Method verb, object body = null)
+    private static IRestResponse MakeRawRequest(string path, Method verb, object body = null, Dictionary<string, string> headers = null)
     {
       var request = new RestRequest(path, verb);
       if (body != null) request.AddParameter("text/json", body, ParameterType.RequestBody);
       var client = new RestClient(BaseAddress);
+      if (headers != null)
+      {
+        foreach (var header in headers)
+        {
+          request.AddHeader(header.Key, header.Value);
+        }
+      }
       var resp = client.Execute(request);
       return resp;
     }
@@ -349,6 +357,28 @@ namespace FluentSimTests
 
     [Test]
     public void CanGetPreviousRequests()
+    {
+      Sim.Post("/post").Responds("OK");
+      MakePostRequest("/post", "BODY", new Dictionary<string, string>
+      {
+        {"Header1", "value1"}
+      });
+      
+      MakePostRequest("/post", "BODY", new Dictionary<string, string>
+      {
+        {"Header1", "value2"}
+      });
+
+      var requests = Sim.ReceivedRequests;
+      requests.Count.ShouldBe(2);
+      var firstRequest = requests[0];
+      var secondRequest = requests[1];
+      firstRequest.Headers["Header1"].ShouldBe("value1");
+      secondRequest.Headers["Header1"].ShouldBe("value2");
+    }
+
+    [Test]
+    public void CanGetMultipleRequestsWithHeaders()
     {
       Sim.Post("/post").Responds("OK");
       MakePostRequest("/post", "BODY");
