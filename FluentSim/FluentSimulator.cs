@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace FluentSim
 {
-    public class FluentSimulator
+    public class FluentSimulator : IDisposable
     {
         private string Address;
         private List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
@@ -197,6 +197,11 @@ namespace FluentSim
         public void EnableCors()
         {
             CorsEnabled = true;
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable) HttpListener)?.Dispose();
         }
     }
 }

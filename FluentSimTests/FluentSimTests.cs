@@ -32,6 +32,7 @@ namespace FluentSimTests
     public void TearDown()
     {
       Sim.Stop();
+      Sim.Dispose();
     }
 
     [Test]
