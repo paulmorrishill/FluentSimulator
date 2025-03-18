@@ -12,6 +12,7 @@ namespace FluentSim
         private string Address;
         private List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
         private HttpListener HttpListener;
+        private object HttpListenerLock = new object();
         private readonly List<Exception> ListenerExceptions = new List<Exception>();
         public object ListenerExceptionsLock = new object();
 
@@ -33,10 +34,13 @@ namespace FluentSim
 
         public void Start()
         {
-            HttpListener = new HttpListener();
-            HttpListener.Prefixes.Add(Address);
-            HttpListener.Start();
-            HttpListener.BeginGetContext(ProcessRequest, HttpListener);
+            lock (HttpListenerLock)
+            {
+                HttpListener = new HttpListener();
+                HttpListener.Prefixes.Add(Address);
+                HttpListener.Start();
+                HttpListener.BeginGetContext(ProcessRequest, HttpListener);
+            }
         }
 
         private void ProcessRequest(IAsyncResult ar)
@@ -52,13 +56,21 @@ namespace FluentSim
             }
             finally
             {
-                if(HttpListener.IsListening)
-                    BeginGetContext();
+                lock (HttpListenerLock)
+                {
+                    if (HttpListener.IsListening)
+                        BeginGetContext();
+                }
             }
         }
 
         private void TryToProcessRequest(IAsyncResult ar)
         {
+            lock (HttpListenerLock)
+            {
+                if (!HttpListener.IsListening)
+                    return;
+            }
             var context = ((HttpListener) ar.AsyncState).EndGetContext(ar);
             var response = context.Response;
             var request = context.Request;
@@ -156,10 +168,14 @@ namespace FluentSim
 
         public void Stop()
         {
+            lock (HttpListenerLock)
+            {
+                HttpListener.Stop();
+                HttpListener.Close();
+            }
             lock(ListenerExceptionsLock)
                 if (ListenerExceptions.Any())
                     throw new SimulatorException(ListenerExceptions);
-            HttpListener.Stop();
         }
 
         public RouteConfigurer Delete(string routePath)
@@ -199,7 +215,10 @@ namespace FluentSim
 
         public void Dispose()
         {
-            ((IDisposable) HttpListener)?.Dispose();
+            lock (HttpListenerLock)
+            {
+                ((IDisposable) HttpListener)?.Dispose();
+            }
         }
     }
 }
