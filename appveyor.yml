@@ -84,7 +84,7 @@ test:
   off
 
 test_script:
-  - cmd: dotnet test --logger "trx;LogFileName=TestResults.xml"
+  - cmd: nunit3-console FluentSimTests\bin\Release\netcoreapp3.1\FluentSimTests.dll --result=myresults.xml;format=AppVeyor
 
 #---------------------------------#
 #     deployment configuration    #
