@@ -10,15 +10,15 @@ namespace FluentSim
     public class FluentConfigurator : RouteConfigurer, RouteSequenceConfigurer
     {
         private string Path;
-        private HttpVerb HttpVerb;
-        private ManualResetEventSlim RespondToRequests = new ManualResetEventSlim(true);
+        private readonly HttpVerb HttpVerb;
+        private readonly ManualResetEventSlim RespondToRequests = new ManualResetEventSlim(true);
         private TimeSpan RouteDelay;
-        private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
-        public Dictionary<string, string> QueryParameters = new Dictionary<string, string>();
+        private readonly List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
+        private readonly Dictionary<string, string> QueryParameters = new Dictionary<string, string>();
         private DefinedResponse CurrentResponse = new DefinedResponse();
         private int NextResponseIndex = 0;
-        private List<DefinedResponse> Responses;
-        private ISerializer Serializer;
+        private readonly List<DefinedResponse> Responses;
+        private readonly ISerializer Serializer;
 
         public FluentConfigurator(string path, HttpVerb get, ISerializer serializer)
         {
@@ -46,14 +46,12 @@ namespace FluentSim
             return this;
         }
 
-
         public RouteConfigurer Responds<T>(T output)
         {
             Util.CheckForSerializer(Serializer);
             CurrentResponse.Output = Serializer.Serialize(output);
             return this;
         }
-
 
         public RouteConfigurer Responds(byte[] output)
         {
@@ -121,8 +119,11 @@ namespace FluentSim
             var queryString = contextRequest.QueryString;
             if (queryString.Count != QueryParameters.Count)
                 return false;
+            
             foreach (string s in queryString)
             {
+                if (!QueryParameters.ContainsKey(s))
+                    return false;
                 var allKeysMatch = queryString[s].Equals(QueryParameters[s]);
                 if (!allKeysMatch)
                     return false;

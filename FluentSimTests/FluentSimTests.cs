@@ -550,6 +550,16 @@ namespace FluentSimTests
       result.StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
     }
 
+    [Test]
+    public void GivenTheQueryParameterCountIsSameButParametersDifferentItDoesNotMatch()
+    {
+      var queryString = "/test?unexpected=value";
+      Sim.Get("/test")
+        .WithParameter("key", "value")
+        .Responds("OK");
+      var result = MakeGetRequest(queryString);
+      result.StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
+    }
 
     [TestCase("value%20here", "value here")]
     [TestCase("value+here", "value here")]
@@ -633,6 +643,47 @@ namespace FluentSimTests
       
       Sim.Dispose();
       Sim = null;
+    }
+
+    [Test]
+    public void DoesNotBlowUpWhenConcurrentlyReadingReceivedRequestsWhileMakingThem()
+    {
+      RemoveCurrentSim();
+      Sim = new FluentSimulator(BaseAddress, concurrentListeners:50);
+      Sim.Start();
+      Sim.Post("/post").Responds("OK");
+
+      var threadCount = 50;
+      var requestsPerThread = 100;
+      var countDown = new CountdownEvent(threadCount);
+      for (var i = 0; i < threadCount; i++)
+      {
+        var requestThread = new Thread(() =>
+        {
+          for (var i = 0; i < requestsPerThread; i++)
+          {
+            var resp = MakePostRequest("/post", "{}");
+            resp.StatusCode.ShouldBe(HttpStatusCode.OK);
+          }
+
+          countDown.Signal();
+        });
+        requestThread.Start();
+      }
+
+      var readThread = new Thread(() =>
+      {
+        while (!countDown.IsSet)
+        {
+          var receivedRequests = Sim.ReceivedRequests;
+          var s = receivedRequests.Select(r => r.RequestBody);
+        }
+      });
+
+      readThread.Start();
+      readThread.Join();
+      countDown.Wait();
+      Sim.ReceivedRequests.Count.ShouldBe(threadCount * requestsPerThread);
     }
 
     [Test]

@@ -4,30 +4,39 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace FluentSim
 {
     public class FluentSimulator : IDisposable
     {
-        private string Address;
-        private List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
+        private readonly string Address;
+        private readonly object ConfiguredRoutesLock = new object();
+        private readonly List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
         private HttpListener HttpListener;
-        private object HttpListenerLock = new object();
+        private readonly object HttpListenerLock = new object();
         private readonly List<Exception> ListenerExceptions = new List<Exception>();
-        public object ListenerExceptionsLock = new object();
+        private readonly object ListenerExceptionsLock = new object();
+        private readonly object ReceivedRequestsLock = new object();
+        private readonly List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
+        private readonly ISerializer Serializer;
+        private readonly SemaphoreSlim ConcurrentRequestCounter;
+        private CancellationTokenSource ListeningCancellationTokenSource;
 
-        public List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
-        private ISerializer Serializer;
-        public IReadOnlyList<ReceivedRequest> ReceivedRequests => IncomingRequests.AsReadOnly();
-        private bool CorsEnabled { get; set; }
-        
-        public FluentSimulator(string address)
+        public IReadOnlyList<ReceivedRequest> ReceivedRequests
         {
-            Address = address;
+            get
+            {
+                lock(ReceivedRequestsLock)
+                    return IncomingRequests.AsReadOnly();
+            }
         }
 
-        public FluentSimulator(string address, ISerializer serializer)
+        private bool CorsEnabled { get; set; }
+        
+        public FluentSimulator(string address, ISerializer serializer = null, int concurrentListeners = 10)
         {
+            ConcurrentRequestCounter = new SemaphoreSlim(concurrentListeners);            
             Serializer = serializer;
             Address = address;
         }
@@ -39,12 +48,29 @@ namespace FluentSim
                 HttpListener = new HttpListener();
                 HttpListener.Prefixes.Add(Address);
                 HttpListener.Start();
-                HttpListener.BeginGetContext(ProcessRequest, HttpListener);
+                ListeningCancellationTokenSource = new CancellationTokenSource();
+                var queuingThread = new Thread(() =>
+                {
+                    while (ListeningCancellationTokenSource.IsCancellationRequested == false)
+                    {
+                        try
+                        {
+                            ConcurrentRequestCounter.Wait(ListeningCancellationTokenSource.Token);
+                            BeginGetContext();
+                        }
+                        catch (OperationCanceledException e)
+                        {
+                            // This is expected when the listener is stopped
+                        }
+                    }
+                });
+                queuingThread.Start();
             }
         }
 
         private void ProcessRequest(IAsyncResult ar)
         {
+            ConcurrentRequestCounter.Release();
             try
             {
                 TryToProcessRequest(ar);
@@ -53,14 +79,6 @@ namespace FluentSim
             {
                 lock (ListenerExceptionsLock)
                     ListenerExceptions.Add(e);
-            }
-            finally
-            {
-                lock (HttpListenerLock)
-                {
-                    if (HttpListener.IsListening)
-                        BeginGetContext();
-                }
             }
         }
 
@@ -77,7 +95,6 @@ namespace FluentSim
 
             try
             {
-               
                 if (CorsEnabled)
                 {
                     response.AddHeader("Access-Control-Allow-Origin", "*");
@@ -90,9 +107,12 @@ namespace FluentSim
                     return;
                 }
 
-                var matchingRoute = ConfiguredRoutes.FirstOrDefault(route => route.DoesRouteMatch(context.Request));
+                FluentConfigurator matchingRoute;
+                lock(ConfiguredRoutesLock)
+                    matchingRoute = ConfiguredRoutes.FirstOrDefault(route => route.DoesRouteMatch(context.Request));
                 var receivedRequest = GetReceivedRequest(request);
-                IncomingRequests.Add(receivedRequest);
+                lock(ReceivedRequestsLock)
+                    IncomingRequests.Add(receivedRequest);
 
                 if (matchingRoute == null)
                 {
@@ -174,12 +194,16 @@ namespace FluentSim
         private RouteConfigurer InitialiseRoute(string path, HttpVerb verb)
         {
             var routeConfig = new FluentConfigurator(path, verb, Serializer);
-            ConfiguredRoutes.Insert(0, routeConfig);
+            lock (ConfiguredRoutesLock)
+            {
+                ConfiguredRoutes.Insert(0, routeConfig);
+            }
             return routeConfig;
         }
 
         public void Stop()
         {
+            ListeningCancellationTokenSource.Cancel();
             lock (HttpListenerLock)
             {
                 HttpListener.Stop();

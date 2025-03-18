@@ -8,7 +8,7 @@ namespace FluentSim
 {
     public class ReceivedRequest
     {
-        private ISerializer Serializer;
+        private readonly ISerializer Serializer;
         public DateTime TimeOfRequest;
 
         public ReceivedRequest(ISerializer jsonSerializer)
