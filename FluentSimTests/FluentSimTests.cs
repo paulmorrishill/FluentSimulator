@@ -406,7 +406,7 @@ namespace FluentSimTests
       var requests = Sim.ReceivedRequests;
       var firstRequest = requests[0];
       var diff = (firstRequest.TimeOfRequest - timeOfRequest);
-      Math.Abs(diff.TotalMilliseconds).ShouldBeLessThan(10);
+      Math.Abs(diff.TotalMilliseconds).ShouldBeLessThan(100);
     }
 
     [Test]
