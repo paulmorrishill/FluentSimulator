@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using FluentSim;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using NSubstitute;
 using NUnit.Framework;
 using RestSharp;
 using Shouldly;
@@ -21,10 +18,16 @@ namespace FluentSimTests
     private FluentSimulator Sim;
     private const string BaseAddress = "http://localhost:8019/";
 
+    private class JsonConvertSerializer : ISerializer
+    {
+      public string Serialize<T>(T obj) => JsonConvert.SerializeObject(obj);
+      public T Deserialize<T>(string json) => JsonConvert.DeserializeObject<T>(json);
+    }
+    
     [SetUp]
     public void SetUp()
     {
-      Sim = new FluentSimulator(BaseAddress);
+      Sim = new FluentSimulator(BaseAddress, new JsonConvertSerializer());
       Sim.Start();
     }
 
@@ -290,16 +293,16 @@ namespace FluentSimTests
     public void CanUseCustomSerializer()
     {
       Sim.Stop();
-      Sim = new FluentSimulator(BaseAddress, new JsonSerializerSettings
-      {
-        Converters = {new StringEnumConverter()}
-      });
+      var serializer = Substitute.For<ISerializer>();
+      serializer.Serialize(Arg.Any<TestSerializeClass>())
+        .Returns(callInfo => callInfo.Arg<TestSerializeClass>().ToString());
+      Sim = new FluentSimulator(BaseAddress, serializer);
       Sim.Start();
 
       Sim.Post("/test")
-        .Responds(new TestEnumClass());
+        .Responds(new TestSerializeClass());
 
-      MakePostRequest("/test", "").Content.ShouldBe(@"{""TestEnumField"":""V2""}");
+      MakePostRequest("/test", "").Content.ShouldBe("ToStringCalledCorrectly");
     }
 
     [Test]
@@ -433,10 +436,10 @@ namespace FluentSimTests
     public void CanGetPreviousBodyWithCustomSerializer()
     {
       Sim.Stop();
-      Sim = new FluentSimulator(BaseAddress, new JsonSerializerSettings
-      {
-        Converters = {new AllFieldsReplacementConverter()}
-      });
+      var serializer = Substitute.For<ISerializer>();
+      serializer.Deserialize<TestObject>(Arg.Any<string>())
+        .Returns(_ => new TestObject {TestField = "REPLACEMENT"});
+      Sim = new FluentSimulator(BaseAddress, serializer);
       Sim.Start();
 
       Sim.Post("/test");
@@ -577,6 +580,36 @@ namespace FluentSimTests
       resp1.Content.ShouldBe("Req: BODY");
     }
 
+    [Test]
+    public void ThrowsCorrectErrorMessageIfNoSerializerProvided()
+    {
+      var simulator = new FluentSimulator(BaseAddress);
+      var ex = Assert.Throws<SimulatorException>(() =>
+      {
+        simulator.Post("/test")
+          .Responds(new TestSerializeClass());
+      });
+      ex.Message.ShouldBe("No serializer has been provided, before using the serialization methods make sure to provide a serializer in the constructor of the simulator");  
+    }
+
+    [Test]
+    public void ThrowsCorrectErrorMessageIfNoSerializerProvidedWhenDeserializing()
+    {
+      Sim.Stop();
+      Sim.Dispose();
+      Sim = new FluentSimulator(BaseAddress);
+      Sim.Start();
+      var ex = Assert.Throws<SimulatorException>(() =>
+      {
+        Sim.Post("/post").Responds("OK");
+        MakePostRequest("/post", @"{""TestField"":""TESTHERE""}");
+        var requests = Sim.ReceivedRequests;
+        var firstRequest = requests[0];
+        firstRequest.BodyAs<TestObject>().TestField.ShouldBe("TESTHERE");
+      });
+      ex.Message.ShouldBe("No serializer has been provided, before using the serialization methods make sure to provide a serializer in the constructor of the simulator");  
+    }
+
     private class AllFieldsReplacementConverter : JsonConverter
     {
       public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -595,19 +628,16 @@ namespace FluentSimTests
       }
     }
 
-    private class TestObject
+    public class TestObject
     {
       public string TestField = "ThisValue";
     }
 
-    private class TestEnumClass
+    public class TestSerializeClass
     {
-      public TestEnum TestEnumField = TestEnum.V2;
-
-      public enum TestEnum
+      public override string ToString()
       {
-        V1,
-        V2
+        return "ToStringCalledCorrectly";
       }
     }
   }

@@ -5,7 +5,7 @@ namespace FluentSim
 {
     public class SimulatorException : ApplicationException
     {
-        public SimulatorException() : base("An unexpected exception was thrown while processing the request. See the exception data for the exceptions thrown.")
+        public SimulatorException(string message = "An unexpected exception was thrown while processing the request. See the exception data for the exceptions thrown.") : base(message)
         {
             
         }

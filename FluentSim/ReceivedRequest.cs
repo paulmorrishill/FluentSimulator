@@ -2,18 +2,18 @@ using System;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
-using Newtonsoft.Json;
+
 
 namespace FluentSim
 {
     public class ReceivedRequest
     {
-        private JsonSerializerSettings JsonSerializerSettings;
+        private ISerializer Serializer;
         public DateTime TimeOfRequest;
 
-        public ReceivedRequest(JsonSerializerSettings jsonSerializer)
+        public ReceivedRequest(ISerializer jsonSerializer)
         {
-            JsonSerializerSettings = jsonSerializer;
+            Serializer = jsonSerializer;
         }
 
         public Uri Url { get; internal set; }
@@ -31,7 +31,8 @@ namespace FluentSim
 
         public T BodyAs<T>()
         {
-            return JsonConvert.DeserializeObject<T>(RequestBody, JsonSerializerSettings);
+            Util.CheckForSerializer(Serializer);
+            return Serializer.Deserialize<T>(RequestBody);
         }
     }
 }

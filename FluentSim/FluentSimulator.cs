@@ -2,11 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Text;
-using System.Threading;
-using Newtonsoft.Json;
 
 namespace FluentSim
 {
@@ -18,21 +15,20 @@ namespace FluentSim
         private readonly List<Exception> ListenerExceptions = new List<Exception>();
         public object ListenerExceptionsLock = new object();
 
-        private JsonSerializerSettings JsonSerializer;
         public List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
+        private ISerializer Serializer;
         public IReadOnlyList<ReceivedRequest> ReceivedRequests => IncomingRequests.AsReadOnly();
         private bool CorsEnabled { get; set; }
         
         public FluentSimulator(string address)
         {
             Address = address;
-            JsonSerializer = new JsonSerializerSettings();
         }
 
-        public FluentSimulator(string address, JsonSerializerSettings serializer)
+        public FluentSimulator(string address, ISerializer serializer)
         {
+            Serializer = serializer;
             Address = address;
-            JsonSerializer = serializer;
         }
 
         public void Start()
@@ -54,6 +50,11 @@ namespace FluentSim
                 lock (ListenerExceptionsLock)
                     ListenerExceptions.Add(e);
             }
+            finally
+            {
+                if(HttpListener.IsListening)
+                    BeginGetContext();
+            }
         }
 
         private void TryToProcessRequest(IAsyncResult ar)
@@ -71,7 +72,6 @@ namespace FluentSim
             if (CorsEnabled && request.HttpMethod.ToUpperInvariant() == "OPTIONS")
             {
                 response.Close();
-                BeginGetContext();
                 return;
             }
 
@@ -83,7 +83,6 @@ namespace FluentSim
             {
                 response.StatusCode = 501;
                 response.Close();
-                BeginGetContext();
                 return;
             }
             var definedResponse = matchingRoute.GetNextDefinedResponse();
@@ -108,14 +107,13 @@ namespace FluentSim
             var output = response.OutputStream;
             output.Write(buffer, 0, buffer.Length);
             output.Close();
-            BeginGetContext();
         }
 
         private ReceivedRequest GetReceivedRequest(HttpListenerRequest request)
         {
             var body = new StreamReader(request.InputStream).ReadToEnd();
 
-            var receivedRequest = new ReceivedRequest(JsonSerializer)
+            var receivedRequest = new ReceivedRequest(Serializer)
             {
                 Url = request.Url,
                 HttpMethod = request.HttpMethod,
@@ -151,7 +149,7 @@ namespace FluentSim
 
         private RouteConfigurer InitialiseRoute(string path, HttpVerb verb)
         {
-            var routeConfig = new FluentConfigurator(path, verb, JsonSerializer);
+            var routeConfig = new FluentConfigurator(path, verb, Serializer);
             ConfiguredRoutes.Insert(0, routeConfig);
             return routeConfig;
         }

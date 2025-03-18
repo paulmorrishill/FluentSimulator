@@ -1,55 +1,28 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Newtonsoft.Json;
 
 namespace FluentSim
 {
-    [DebuggerDisplay("{Description}")]
-    internal class DefinedResponse
-    {
-        public string Output = "";
-        private string Description { get; set; }
-        public void AddDescriptionPart(string part) => Description += " " + part;
-        public byte[] BinaryOutput = null;
-        public bool ShouldImmediatelyDisconnect = false;
-        public List<Action<HttpListenerContext>> ResponseModifiers = new List<Action<HttpListenerContext>>();
-        public Func<ReceivedRequest, string> HandlerFunction { get; set; }
-
-        internal string GetBody(ReceivedRequest request)
-        {
-            if (HandlerFunction != null)
-                return HandlerFunction(request);
-            return Output;
-        }
-        
-        internal void RunContextModifiers(HttpListenerContext context)
-        {
-            foreach (var responseModifier in ResponseModifiers)
-                responseModifier(context);
-        }
-    }
-    
     public class FluentConfigurator : RouteConfigurer, RouteSequenceConfigurer
     {
         private string Path;
         private HttpVerb HttpVerb;
         private ManualResetEventSlim RespondToRequests = new ManualResetEventSlim(true);
         private TimeSpan RouteDelay;
-        private JsonSerializerSettings JsonSerializerSettings;
         private List<ReceivedRequest> ReceivedRequests = new List<ReceivedRequest>();
         public Dictionary<string, string> QueryParameters = new Dictionary<string, string>();
         private DefinedResponse CurrentResponse = new DefinedResponse();
         private int NextResponseIndex = 0;
         private List<DefinedResponse> Responses;
+        private ISerializer Serializer;
 
-        public FluentConfigurator(string path, HttpVerb get, JsonSerializerSettings jsonConverter)
+        public FluentConfigurator(string path, HttpVerb get, ISerializer serializer)
         {
-            JsonSerializerSettings = jsonConverter;
+            Serializer = serializer;
             HttpVerb = get;
             Path = path;
             Responses = new List<DefinedResponse>
@@ -76,9 +49,11 @@ namespace FluentSim
 
         public RouteConfigurer Responds<T>(T output)
         {
-            CurrentResponse.Output = JsonConvert.SerializeObject(output, JsonSerializerSettings);
+            Util.CheckForSerializer(Serializer);
+            CurrentResponse.Output = Serializer.Serialize(output);
             return this;
         }
+
 
         public RouteConfigurer Responds(byte[] output)
         {
@@ -237,5 +212,4 @@ namespace FluentSim
             return resp;
         }
     }
-
 }

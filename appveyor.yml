@@ -9,17 +9,12 @@
 #---------------------------------#
 
 # version format
-version: 2.1.{build}
-
-# you can use {branch} name in version format too
-# version: 1.0.{build}-{branch}
+version: 3.0.{build}
 
 # branches to build
 branches:
-  # whitelist
   only:
     - master
-
 
 # Maximum number of concurrent jobs for the project
 max_jobs: 1
@@ -39,7 +34,7 @@ init:
 clone_folder: c:\projects\myproject
 
 # fetch repository as zip archive
-shallow_clone: true                 # default is "false"
+shallow_clone: true
 
 # set clone depth
 clone_depth: 5                      # clone entire repository history if not defined
@@ -55,9 +50,8 @@ matrix:
 
 # build cache to preserve files/folders between builds
 cache:
-  - packages -> **\packages.config  # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
+  - packages -> **\packages.config
   - '%LocalAppData%\NuGet\v3-cache'
-
 
 # enable patching of AssemblyInfo.* files
 dotnet_csproj:
@@ -65,54 +59,27 @@ dotnet_csproj:
   file: '**\FluentSimulator.csproj'
   version: '{version}'
 
-
-
-# Automatically register private account and/or project AppVeyor NuGet feeds.
-#nuget:
-#  account_feed: true
-#  project_feed: true
-#  disable_publish_on_pr: true     # disable publishing of .nupkg artifacts to
-                                  # account/project feeds for pull request builds
-
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
 
-# build platform, i.e. x86, x64, Any CPU. This setting is optional.
-# platform: Any CPU
-
-# to add several platforms to build matrix:
-#platform:
-#  - x86
-#  - Any CPU
-
-# build Configuration, i.e. Debug, Release, etc.
 configuration: Release
-
-# to add several configurations to build matrix:
-#configuration:
-#  - Debug
-#  - Release
 
 install:
   - cmd: dotnet restore --verbosity minimal
 
-# 5. AppVeyor patches AssemblyInfo and csproj files
-# 6. AppVeyor modifies hosts files
-# 7. AppVeyor "starts services"
-
-# 8. BUILD
+# Build
 build_script:
   - cmd: dotnet build
-  
+
+# Pack with Symbols
 after_build:
-  - cmd: dotnet pack --configuration Release --no-build --output ./artifacts
+  - cmd: dotnet pack --configuration Release --no-build --include-symbols --include-source --output ./artifacts
 
 #---------------------------------#
 #       tests configuration       #
 #---------------------------------#
 
-# to run tests again only selected assemblies and/or categories
 test:
   off
 
@@ -123,29 +90,17 @@ test_script:
 #     deployment configuration    #
 #---------------------------------#
 
-# providers: Local, FTP, WebDeploy, AzureCS, AzureBlob, S3, NuGet, Environment
-# provider names are case-sensitive!
 deploy:
-
-    # Deploying to NuGet feed
   - provider: NuGet
-  #  server: https://my.nuget.server/feed
     api_key:
       secure: 6Uz3WIjGF2kUkhagOqLHNhIAtdfDWn3xkIj8ahMIbw495DBXJBkD5Uv41HgMdu5T
-  #  skip_symbols: false
-  #  symbol_server: https://your.symbol.server/feed
-  # Deploy to GitHub Releases
-  #- provider: GitHub
-  #  artifact: /.*\.nupkg/           # upload all NuGet packages to release assets
-  #  draft: false
-  #  prerelease: false
-  #  on:
-  #    branch: master                # release from master branch only
-  #    appveyor_repo_tag: true       # deploy on tag push only
-
+    skip_symbols: false  # Ensure symbols are uploaded
+    symbol_server: https://symbols.nuget.org/upload  # NuGet Symbol Server
 
 artifacts:
   - path: TestResults.xml
     name: Test Report
   - path: ./artifacts/*.nupkg
-    name: NuGet
+    name: NuGet Package
+  - path: ./artifacts/*.snupkg
+    name: Symbol Package
