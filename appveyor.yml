@@ -102,5 +102,3 @@ artifacts:
     name: Test Report
   - path: ./artifacts/*.nupkg
     name: NuGet Package
-  - path: ./artifacts/*.snupkg
-    name: Symbol Package
