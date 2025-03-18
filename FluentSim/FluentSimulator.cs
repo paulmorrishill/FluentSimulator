@@ -146,7 +146,8 @@ namespace FluentSim
 
         private void BeginGetContext()
         {
-            HttpListener.BeginGetContext(ProcessRequest, HttpListener);
+            lock(HttpListener)
+                HttpListener.BeginGetContext(ProcessRequest, HttpListener);
         }
 
         public RouteConfigurer Post(string path)
