@@ -76,6 +76,7 @@ namespace FluentSimTests
       var request = new RestRequest(path, verb);
       if (body != null) request.AddParameter("text/json", body, ParameterType.RequestBody);
       var client = new RestClient(BaseAddress);
+      client.Timeout = 5000;
       if (headers != null)
       {
         foreach (var header in headers)
@@ -450,8 +451,8 @@ namespace FluentSimTests
 
     private void RemoveCurrentSim()
     {
-      Sim.Stop();
-      Sim.Dispose();
+      Sim?.Stop();
+      Sim?.Dispose();
     }
 
     [Test]
@@ -612,6 +613,48 @@ namespace FluentSimTests
         firstRequest.BodyAs<TestObject>().TestField.ShouldBe("TESTHERE");
       });
       ex.Message.ShouldBe("No serializer has been provided, before using the serialization methods make sure to provide a serializer in the constructor of the simulator");  
+    }
+
+    [Test]
+    public void ThrowsListenerExceptionsAfterStop()
+    {
+      Sim.Post("/post")
+        .IsHandledBy(r => throw new Exception("Inner exception"));
+      MakePostRequest("/post", "{}");
+      MakePostRequest("/post", "{}");
+
+      var ex = Assert.Throws<AggregateException>(() =>
+      {
+        Sim.Stop();
+      });
+      ex.InnerExceptions.Count.ShouldBe(2);
+      ex.InnerExceptions[0].Message.ShouldBe("Inner exception");
+      ex.InnerExceptions[1].Message.ShouldBe("Inner exception");
+      
+      Sim.Dispose();
+      Sim = null;
+    }
+
+    [Test]
+    public void Returns500OnListenerException()
+    {
+      Sim.Post("/post")
+        .IsHandledBy(r => throw new Exception("Inner exception"));
+
+      var resp = MakePostRequest("/post", "{}");
+      resp.StatusCode.ShouldBe(HttpStatusCode.InternalServerError);
+      resp.Content.ShouldBe("Inner exception");
+
+      try
+      {
+        // A listener exception will be thrown here
+        Sim.Stop();
+      }
+      catch (Exception)
+      {
+        Sim.Dispose();
+        Sim = null;
+      }
     }
 
     private class AllFieldsReplacementConverter : JsonConverter

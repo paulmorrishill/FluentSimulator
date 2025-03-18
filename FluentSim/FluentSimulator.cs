@@ -75,50 +75,61 @@ namespace FluentSim
             var response = context.Response;
             var request = context.Request;
 
-            if (CorsEnabled)
+            try
             {
-                response.AddHeader("Access-Control-Allow-Origin", "*");
-                response.AddHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-            }
+               
+                if (CorsEnabled)
+                {
+                    response.AddHeader("Access-Control-Allow-Origin", "*");
+                    response.AddHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+                }
 
-            if (CorsEnabled && request.HttpMethod.ToUpperInvariant() == "OPTIONS")
+                if (CorsEnabled && request.HttpMethod.ToUpperInvariant() == "OPTIONS")
+                {
+                    response.Close();
+                    return;
+                }
+
+                var matchingRoute = ConfiguredRoutes.FirstOrDefault(route => route.DoesRouteMatch(context.Request));
+                var receivedRequest = GetReceivedRequest(request);
+                IncomingRequests.Add(receivedRequest);
+
+                if (matchingRoute == null)
+                {
+                    response.StatusCode = 501;
+                    response.Close();
+                    return;
+                }
+                var definedResponse = matchingRoute.GetNextDefinedResponse();
+
+                if (definedResponse.ShouldImmediatelyDisconnect)
+                {
+                    response.Abort();
+                    return;
+                }
+
+                matchingRoute.AddReceivedRequest(receivedRequest);
+                matchingRoute.WaitUntilReadyToRespond();
+
+                definedResponse.RunContextModifiers(context);
+
+                byte[] buffer = definedResponse.BinaryOutput;
+
+                if(buffer == null)
+                    buffer = Encoding.UTF8.GetBytes(definedResponse.GetBody(receivedRequest));
+
+                response.ContentLength64 = buffer.Length;
+                var output = response.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
+                output.Close();
+            } catch (Exception e)
             {
+                lock (ListenerExceptionsLock)
+                    ListenerExceptions.Add(e);
+                response.StatusCode = 500;
+                response.OutputStream.Write(Encoding.UTF8.GetBytes(e.Message), 0, e.Message.Length);
                 response.Close();
-                return;
             }
-
-            var matchingRoute = ConfiguredRoutes.FirstOrDefault(route => route.DoesRouteMatch(context.Request));
-            var receivedRequest = GetReceivedRequest(request);
-            IncomingRequests.Add(receivedRequest);
-
-            if (matchingRoute == null)
-            {
-                response.StatusCode = 501;
-                response.Close();
-                return;
-            }
-            var definedResponse = matchingRoute.GetNextDefinedResponse();
-
-            if (definedResponse.ShouldImmediatelyDisconnect)
-            {
-                response.Abort();
-                return;
-            }
-
-            matchingRoute.AddReceivedRequest(receivedRequest);
-            matchingRoute.WaitUntilReadyToRespond();
-
-            definedResponse.RunContextModifiers(context);
-
-            byte[] buffer = definedResponse.BinaryOutput;
-
-            if(buffer == null)
-                buffer = Encoding.UTF8.GetBytes(definedResponse.GetBody(receivedRequest));
-
-            response.ContentLength64 = buffer.Length;
-            var output = response.OutputStream;
-            output.Write(buffer, 0, buffer.Length);
-            output.Close();
         }
 
         private ReceivedRequest GetReceivedRequest(HttpListenerRequest request)
@@ -172,11 +183,11 @@ namespace FluentSim
             lock (HttpListenerLock)
             {
                 HttpListener.Stop();
-                HttpListener.Close();
             }
+            
             lock(ListenerExceptionsLock)
                 if (ListenerExceptions.Any())
-                    throw new SimulatorException(ListenerExceptions);
+                    throw new AggregateException(ListenerExceptions);
         }
 
         public RouteConfigurer Delete(string routePath)
