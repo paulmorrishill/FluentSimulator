@@ -11,16 +11,22 @@ namespace FluentSim
     public class FluentSimulator : IDisposable
     {
         private readonly string Address;
+        
         private readonly object ConfiguredRoutesLock = new object();
         private readonly List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
-        private HttpListener HttpListener;
+        
         private readonly object HttpListenerLock = new object();
-        private readonly List<Exception> ListenerExceptions = new List<Exception>();
+        private HttpListener HttpListener;
+
         private readonly object ListenerExceptionsLock = new object();
+        private readonly List<Exception> ListenerExceptions = new List<Exception>();
+        
         private readonly object ReceivedRequestsLock = new object();
         private readonly List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
+        
         private readonly ISerializer Serializer;
         private readonly SemaphoreSlim ConcurrentRequestCounter;
+        
         private CancellationTokenSource ListeningCancellationTokenSource;
         private Thread QueuingThread;
 
@@ -143,7 +149,8 @@ namespace FluentSim
                 var output = response.OutputStream;
                 output.Write(buffer, 0, buffer.Length);
                 output.Close();
-            } catch (Exception e)
+            } 
+            catch (Exception e)
             {
                 lock (ListenerExceptionsLock)
                     ListenerExceptions.Add(e);
@@ -205,13 +212,12 @@ namespace FluentSim
         public void Stop()
         {
             ListeningCancellationTokenSource.Cancel();
+            QueuingThread.Join();
+            
             lock (HttpListenerLock)
             {
                 HttpListener.Stop();
             }
-
-            QueuingThread.Join();
-            
             lock(ListenerExceptionsLock)
                 if (ListenerExceptions.Any())
                     throw new AggregateException(ListenerExceptions);

@@ -589,7 +589,6 @@ namespace FluentSimTests
     [Test]
     public void LambdaHandlerReceivesCorrectRequestInfo()
     {
-      var counter = 0;
       Sim.Post("/post").IsHandledBy(r => $"Req: {r.RequestBody}");
       
       var resp1 = MakePostRequest("/post", "BODY");
@@ -661,7 +660,7 @@ namespace FluentSimTests
       {
         var requestThread = new Thread(() =>
         {
-          for (var i = 0; i < requestsPerThread; i++)
+          for (var r = 0; r < requestsPerThread; r++)
           {
             var resp = MakePostRequest("/post", "{}");
             resp.StatusCode.ShouldBe(HttpStatusCode.OK);
