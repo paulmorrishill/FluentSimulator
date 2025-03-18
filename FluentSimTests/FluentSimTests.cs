@@ -656,6 +656,7 @@ namespace FluentSimTests
       var threadCount = 50;
       var requestsPerThread = 100;
       var countDown = new CountdownEvent(threadCount);
+      var threads = new List<Thread>();
       for (var i = 0; i < threadCount; i++)
       {
         var requestThread = new Thread(() =>
@@ -668,6 +669,7 @@ namespace FluentSimTests
 
           countDown.Signal();
         });
+        threads.Add(requestThread);
         requestThread.Start();
       }
 
@@ -683,6 +685,7 @@ namespace FluentSimTests
       readThread.Start();
       readThread.Join();
       countDown.Wait();
+      threads.ForEach(t => t.Join());
       Sim.ReceivedRequests.Count.ShouldBe(threadCount * requestsPerThread);
     }
 
