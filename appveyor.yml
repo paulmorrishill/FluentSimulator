@@ -94,6 +94,7 @@ deploy:
   - provider: NuGet
     api_key:
       secure: XJgryIiE07Gp0fNnPJJb48rtca7UecB5kPvdMBC4Ylufto1G5JyLYVvOrzFupdqH
+    skip_symbols: false
 
 artifacts:
   - path: TestResults.xml
