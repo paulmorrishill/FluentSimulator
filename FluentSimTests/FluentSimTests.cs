@@ -34,8 +34,7 @@ namespace FluentSimTests
     [TearDown]
     public void TearDown()
     {
-      Sim.Stop();
-      Sim.Dispose();
+      RemoveCurrentSim();
     }
 
     [Test]
@@ -292,7 +291,7 @@ namespace FluentSimTests
     [Test]
     public void CanUseCustomSerializer()
     {
-      Sim.Stop();
+      RemoveCurrentSim();
       var serializer = Substitute.For<ISerializer>();
       serializer.Serialize(Arg.Any<TestSerializeClass>())
         .Returns(callInfo => callInfo.Arg<TestSerializeClass>().ToString());
@@ -435,7 +434,7 @@ namespace FluentSimTests
     [Test]
     public void CanGetPreviousBodyWithCustomSerializer()
     {
-      Sim.Stop();
+      RemoveCurrentSim();
       var serializer = Substitute.For<ISerializer>();
       serializer.Deserialize<TestObject>(Arg.Any<string>())
         .Returns(_ => new TestObject {TestField = "REPLACEMENT"});
@@ -447,6 +446,12 @@ namespace FluentSimTests
       MakePostRequest("/test", @"{""TestField"":""original""}");
 
       Sim.ReceivedRequests[0].BodyAs<TestObject>().TestField.ShouldBe("REPLACEMENT");
+    }
+
+    private void RemoveCurrentSim()
+    {
+      Sim.Stop();
+      Sim.Dispose();
     }
 
     [Test]

@@ -8,6 +8,7 @@
         <authors>Paul Morris-Hill</authors>
 		<projectUrl>https://github.com/paulmorrishill/FluentSimulator</projectUrl>
 		<licenseUrl>https://github.com/paulmorrishill/FluentSimulator/blob/master/LICENSE</licenseUrl>
+        <readme>README.md</readme>
     </metadata>
 	<files>
 		<file src="bin\Release\netstandard2.0\FluentSimulator.dll" target="lib\FluentSimulator.dll"></file>
