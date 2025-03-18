@@ -13,26 +13,6 @@ There are 2 main use cases for FluentSimulator.
 # Usage
 Using the simulator is designed to be extremely easy.
 
-### Breaking change in V3
-Json.Net JsonConvert is no longer a dependency in the package.
-
-You will need to include it in your project if you are using the `Responds(object)` method. Or if you intend on using the `BodyAs<T>` method on the `ReceivedRequest` object.
-
-This was done to reduce dependency version conflicts, and also for those who do not intend to use `JSON` e.g. for `XML` endpoint mocking.
-
-To have it work exactly as in V2, simply provide an implementation of `ISerializer` that uses `JsonConvert` in the constructor of `FluentSimulator`.
-
-```c#
-private class JsonConvertSerializer : ISerializer
-{
-  public string Serialize<T>(T obj) => JsonConvert.SerializeObject(obj);
-  public T Deserialize<T>(string json) => JsonConvert.DeserializeObject<T>(json);
-}
-
-Sim = new FluentSimulator(BaseAddress, new JsonConvertSerializer());
-Sim.Start();
-```
-
 ```c#
 //Initialise the simulator
 var simulator = new FluentSimulator("http://localhost:8080/");
@@ -57,6 +37,26 @@ public void TearDown()
    //Stop the simulator
    simulator.Stop();  
 }
+```
+
+### Breaking change in V3
+Json.Net JsonConvert is no longer a dependency in the package.
+
+You will need to include it in your project if you are using the `Responds(object)` method. Or if you intend on using the `BodyAs<T>` method on the `ReceivedRequest` object.
+
+This was done to reduce dependency version conflicts, and also for those who do not intend to use `JSON` e.g. for `XML` endpoint mocking.
+
+To have it work exactly as in V2, simply provide an implementation of `ISerializer` that uses `JsonConvert` in the constructor of `FluentSimulator`.
+
+```c#
+private class JsonConvertSerializer : ISerializer
+{
+  public string Serialize<T>(T obj) => JsonConvert.SerializeObject(obj);
+  public T Deserialize<T>(string json) => JsonConvert.DeserializeObject<T>(json);
+}
+
+Sim = new FluentSimulator(BaseAddress, new JsonConvertSerializer());
+Sim.Start();
 ```
 
 # Request matching
