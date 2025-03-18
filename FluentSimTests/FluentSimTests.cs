@@ -48,6 +48,30 @@ namespace FluentSimTests
       resp.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
+    [Test]
+    public void CanThrowOnUnexpectedRequests()
+    {
+      Sim.ThrowOnUnexpectedRequest = true;
+      Sim.Get("/test")
+        .Responds("TEST");
+      
+      var resp = MakeGetRequest("/unexpected?q=test");
+      resp.StatusCode.ShouldBe(HttpStatusCode.NotImplemented);
+
+      var ex = Assert.Throws<UnexpectedRequestException>(() =>
+      {
+        Sim.Stop();
+      });
+      
+      ex.Message.ShouldContain("URL: http://localhost:8019/unexpected");
+      ex.Message.ShouldContain("HTTP Method: GET");
+      ex.Message.ShouldContain("Raw URL: /unexpected?q=test");
+      ex.Message.ShouldContain("Query String Parameters:");
+      ex.Message.ShouldContain("q: test");
+      Sim.Dispose();
+      Sim = null;
+    }
+
     private static IRestResponse MakeGetRequest(string path, int timeout=50000)
     {
       var request = new RestRequest(path, Method.GET);
@@ -599,6 +623,7 @@ namespace FluentSimTests
     public void ThrowsCorrectErrorMessageIfNoSerializerProvided()
     {
       using var simulator = new FluentSimulator(BaseAddress);
+      simulator.ThrowOnUnexpectedRequest = true;
       var ex = Assert.Throws<SimulatorException>(() =>
       {
         simulator.Post("/test")

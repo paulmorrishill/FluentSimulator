@@ -40,7 +40,7 @@ public void TearDown()
 ```
 
 ### Breaking change in V3
-Json.Net JsonConvert is no longer a dependency in the package.
+[Json.Net](https://nuget.org/packages/Newtonsoft.Json) is no longer a dependency in the package.
 
 You will need to include it in your project if you are using the `Responds(object)` method. Or if you intend on using the `BodyAs<T>` method on the `ReceivedRequest` object.
 
@@ -113,8 +113,54 @@ simulator.Get("/viewprofile.php")
           .Responds("OK");
 ```
 
-## Non matching requests
+## Non-matching requests
 Any request that does not match any configured responses will return a *501 Not Implemented* status code and an empty response body.
+
+If you want to capture unexpected requests you can set the flag `ThrowOnUnexpectedRequest` to `true` on the simulator instance.
+
+```c#
+simulator.ThrowOnUnexpectedRequest = true;
+```
+
+Because all request handling is done asynchronously, the exceptions will be thrown on the `simulator.Stop()` method (the simulator will still stop as expected). An exception of type `UnexpectedRequestException` will be thrown with a comprehensive message of the unexpected requests that were made.
+
+```text
+One or more unexpected requests were received:
+--------------------------------------------------
+Time of Request: 18/03/2025 23:25:33
+URL: http://localhost:8019/unexpected?q=test
+HTTP Method: GET
+Content Encoding: Unicode (UTF-8)
+Content Type: 
+Accept Types: application/json, text/json, text/x-json, text/javascript, application/xml, text/xml
+User Agent: RestSharp/106.6.10.0
+User Languages: 
+Raw URL: /unexpected?q=test
+Headers:
+  Connection: Keep-Alive
+  Accept: application/json, text/json, text/x-json, text/javascript, application/xml, text/xml
+  Accept-Encoding: gzip, deflate
+  Host: localhost:8019
+  User-Agent: RestSharp/106.6.10.0
+Query String Parameters:
+  q: test
+Cookies:
+Request Body:
+```
+
+You can also access the unexpected requests via the `UnexpectedRequests` property on the simulator instance.
+
+```c#
+try
+{
+    simulator.Stop();
+}
+catch (UnexpectedRequestException ex)
+{
+    // Do something with the unexpected requests
+    var unexpectedRequests = ex.UnexpectedRequests;
+}
+```
 
 # Responding to requests
 The simulator can be very useful in testing outputs that aren't easy to create reliably on demand using real endpoints.
@@ -160,6 +206,10 @@ resp1.Content.ShouldBe("Counter: 0");
 resp2.Content.ShouldBe("Counter: 1");
 ```
 
+### Exceptions
+In the event your dynamic handler throws an exception the simulator will return a 500 status code with the exception message as the response body.
+
+In addition, an `AggregateException` will be thrown when the simulator is stopped, containing all the exceptions that were thrown by the dynamic handlers while the simulator was running.
 
 ## Slow responses
 You can test how your code handles slow server replies.
@@ -240,10 +290,19 @@ simulator.Put("/employee/1").Responds(new EmployeeModel());
 ```
 
 ### Configuring the serializer
-Internally the simulator uses the Newtonsoft [Json.NET](https://github.com/JamesNK/Newtonsoft.Json) library you can pass in your own serializer settings.
+To use the serialization methods you must provide an interface implementation of `ISerializer` in the constructor of `FluentSimulator`.
+
+Example using [Json.Net](https://nuget.org/packages/Newtonsoft.Json) serialization:
+```c#
+class JsonConvertSerializer : ISerializer
+{
+  public string Serialize<T>(T obj) => JsonConvert.SerializeObject(obj);
+  public T Deserialize<T>(string json) => JsonConvert.DeserializeObject<T>(json);
+}
+```
 
 ```c#
-var simulator = new FluentSimulator("http://localhost:8080/", new JsonSerialiserSettings());
+var simulator = new FluentSimulator("http://localhost:8080/", new JsonConvertSerializer());
 ```
 
 # Asserting on requests
@@ -288,6 +347,15 @@ var sentEmployee = requests[0].BodyAs<EmployeeModel>();
 
 Assert.AreEqual(sentEmployee.FirstName, "John");
 ```
+
+# Concurrency
+The simulator is thread safe and can be used in parallel tests. A background thread is used to process the `HttpListener.BeginGetContext` calls. This has a concurrent limit that can be specified in the constructor via the optional parameter `concurrentListeners`. The default is 10.
+
+```c#
+Sim = new FluentSimulator(BaseAddress, concurrentListeners:50);
+```
+
+All methods can be used in a concurrent environment, including route configuration and `RecievedRequests` access.
 
 # Contributing
 Contributing to this project is very easy, fork the repo and start coding. Please make sure all changes are unit tested, have a look at the existing unit tests to get an idea of how it works.

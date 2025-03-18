@@ -12,23 +12,25 @@ namespace FluentSim
     {
         private readonly string Address;
         
-        private readonly object ConfiguredRoutesLock = new object();
-        private readonly List<FluentConfigurator> ConfiguredRoutes = new List<FluentConfigurator>();
+        private readonly object ConfiguredRoutesLock = new();
+        private readonly List<FluentConfigurator> ConfiguredRoutes = new();
         
-        private readonly object HttpListenerLock = new object();
+        private readonly object HttpListenerLock = new();
         private HttpListener HttpListener;
 
-        private readonly object ListenerExceptionsLock = new object();
-        private readonly List<Exception> ListenerExceptions = new List<Exception>();
+        private readonly object ListenerExceptionsLock = new();
+        private readonly List<Exception> ListenerExceptions = new();
         
-        private readonly object ReceivedRequestsLock = new object();
-        private readonly List<ReceivedRequest> IncomingRequests = new List<ReceivedRequest>();
+        private readonly object ReceivedRequestsLock = new();
+        private readonly List<ReceivedRequest> IncomingRequests = new();
         
         private readonly ISerializer Serializer;
         private readonly SemaphoreSlim ConcurrentRequestCounter;
         
         private CancellationTokenSource ListeningCancellationTokenSource;
         private Thread QueuingThread;
+        private object UnexpectedRequestListLock = new();
+        private List<ReceivedRequest> UnexpectedRequests = new();
 
         public IReadOnlyList<ReceivedRequest> ReceivedRequests
         {
@@ -40,7 +42,8 @@ namespace FluentSim
         }
 
         private bool CorsEnabled { get; set; }
-        
+        public bool ThrowOnUnexpectedRequest { get; set; }
+
         public FluentSimulator(string address, ISerializer serializer = null, int concurrentListeners = 10)
         {
             ConcurrentRequestCounter = new SemaphoreSlim(concurrentListeners);            
@@ -123,6 +126,8 @@ namespace FluentSim
 
                 if (matchingRoute == null)
                 {
+                    lock(UnexpectedRequestListLock)
+                        UnexpectedRequests.Add(receivedRequest);
                     response.StatusCode = 501;
                     response.Close();
                     return;
@@ -218,9 +223,14 @@ namespace FluentSim
             {
                 HttpListener.Stop();
             }
+            
             lock(ListenerExceptionsLock)
                 if (ListenerExceptions.Any())
                     throw new AggregateException(ListenerExceptions);
+            
+            lock(UnexpectedRequestListLock)
+                if(ThrowOnUnexpectedRequest && UnexpectedRequests.Any())
+                    throw new UnexpectedRequestException(UnexpectedRequests);
         }
 
         public RouteConfigurer Delete(string routePath)
