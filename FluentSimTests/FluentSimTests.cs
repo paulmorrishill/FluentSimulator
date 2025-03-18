@@ -588,7 +588,7 @@ namespace FluentSimTests
     [Test]
     public void ThrowsCorrectErrorMessageIfNoSerializerProvided()
     {
-      var simulator = new FluentSimulator(BaseAddress);
+      using var simulator = new FluentSimulator(BaseAddress);
       var ex = Assert.Throws<SimulatorException>(() =>
       {
         simulator.Post("/test")
@@ -600,8 +600,7 @@ namespace FluentSimTests
     [Test]
     public void ThrowsCorrectErrorMessageIfNoSerializerProvidedWhenDeserializing()
     {
-      Sim.Stop();
-      Sim.Dispose();
+      RemoveCurrentSim();
       Sim = new FluentSimulator(BaseAddress);
       Sim.Start();
       var ex = Assert.Throws<SimulatorException>(() =>
