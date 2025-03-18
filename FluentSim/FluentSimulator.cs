@@ -22,6 +22,7 @@ namespace FluentSim
         private readonly ISerializer Serializer;
         private readonly SemaphoreSlim ConcurrentRequestCounter;
         private CancellationTokenSource ListeningCancellationTokenSource;
+        private Thread QueuingThread;
 
         public IReadOnlyList<ReceivedRequest> ReceivedRequests
         {
@@ -49,22 +50,22 @@ namespace FluentSim
                 HttpListener.Prefixes.Add(Address);
                 HttpListener.Start();
                 ListeningCancellationTokenSource = new CancellationTokenSource();
-                var queuingThread = new Thread(() =>
+                QueuingThread = new Thread(() =>
                 {
-                    while (ListeningCancellationTokenSource.IsCancellationRequested == false)
+                    try
                     {
-                        try
+                        while (ListeningCancellationTokenSource.IsCancellationRequested == false)
                         {
                             ConcurrentRequestCounter.Wait(ListeningCancellationTokenSource.Token);
                             BeginGetContext();
                         }
-                        catch (OperationCanceledException e)
-                        {
-                            // This is expected when the listener is stopped
-                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // This is expected when the listener is stopped
                     }
                 });
-                queuingThread.Start();
+                QueuingThread.Start();
             }
         }
 
@@ -208,6 +209,8 @@ namespace FluentSim
             {
                 HttpListener.Stop();
             }
+
+            QueuingThread.Join();
             
             lock(ListenerExceptionsLock)
                 if (ListenerExceptions.Any())
