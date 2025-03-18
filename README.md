@@ -148,7 +148,7 @@ Cookies:
 Request Body:
 ```
 
-You can also access the unexpected requests via the `UnexpectedRequests` property on the simulator instance.
+You can also access the unexpected requests via the `UnexpectedRequests` property on the `UnexpectedRequestException` instance.
 
 ```c#
 try
